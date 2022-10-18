@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Lukiya/logs/core"
+	"github.com/syncfuture/go/stask"
 	"github.com/syncfuture/go/u"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,37 +12,32 @@ import (
 )
 
 const (
-	_LOG_DB_PREFIX = "LOG_"
-	_ENTRY_TABLE   = "entries"
-	_CLIENT_DB     = "LogClients"
-	_CLIENT_TABLE  = "clients"
+	_CLIENT_DB    = "LogClients"
+	_CLIENT_TABLE = "clients"
 )
 
 var (
-	_client     *mongo.Client
-	clientTable *mongo.Collection
+	_client      *mongo.Client
+	_parallel    = stask.NewParallel()
+	_clientTable *mongo.Collection
 )
 
 func init() {
 	connStr := core.MainCP.GetString("ConnectionStrings.Mongo")
-
+	ctx := context.Background()
 	// Create a new client and connect to the server
 	var err error
-	_client, err = mongo.Connect(context.Background(), options.Client().ApplyURI(connStr))
+	_client, err = mongo.Connect(ctx, options.Client().ApplyURI(connStr))
 	u.LogFatal(err)
 
-	clientTable = _client.Database(_CLIENT_DB).Collection(_CLIENT_TABLE)
+	_clientTable = _client.Database(_CLIENT_DB).Collection(_CLIENT_TABLE)
 	unique := true
 
-	_, err = clientTable.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+	_, err = _clientTable.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "id", Value: 1}},
 			Options: &options.IndexOptions{Unique: &unique},
 		},
 	})
 	u.LogFatal(err)
-}
-
-func getTable(dbName string) *mongo.Collection {
-	return _client.Database(dbName).Collection(_ENTRY_TABLE)
 }

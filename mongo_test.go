@@ -36,6 +36,13 @@ func Test_Client(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int32(3), client.DBPolicy)
 
+	rs, err := dal.GetClients(&model.LogClientsQuery{
+		PageSize:  10,
+		PageIndex: 1,
+	})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, rs.LogClients)
+
 	err = dal.DeleteClient(id)
 	assert.NoError(t, err)
 

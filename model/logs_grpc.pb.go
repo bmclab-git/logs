@@ -22,9 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LogEntryServiceClient interface {
-	GetLogEntries(ctx context.Context, in *LogEntriesQuery, opts ...grpc.CallOption) (*LogEntriesResult, error)
-	Write(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*LogEntryResult, error)
-	GetUser(ctx context.Context, in *LogEntryQuery, opts ...grpc.CallOption) (*LogEntryResult, error)
+	Write(ctx context.Context, in *WriteLogCommand, opts ...grpc.CallOption) (*LogEntryResult, error)
 }
 
 type logEntryServiceClient struct {
@@ -35,27 +33,9 @@ func NewLogEntryServiceClient(cc grpc.ClientConnInterface) LogEntryServiceClient
 	return &logEntryServiceClient{cc}
 }
 
-func (c *logEntryServiceClient) GetLogEntries(ctx context.Context, in *LogEntriesQuery, opts ...grpc.CallOption) (*LogEntriesResult, error) {
-	out := new(LogEntriesResult)
-	err := c.cc.Invoke(ctx, "/model.LogEntryService/GetLogEntries", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *logEntryServiceClient) Write(ctx context.Context, in *LogEntry, opts ...grpc.CallOption) (*LogEntryResult, error) {
+func (c *logEntryServiceClient) Write(ctx context.Context, in *WriteLogCommand, opts ...grpc.CallOption) (*LogEntryResult, error) {
 	out := new(LogEntryResult)
 	err := c.cc.Invoke(ctx, "/model.LogEntryService/Write", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *logEntryServiceClient) GetUser(ctx context.Context, in *LogEntryQuery, opts ...grpc.CallOption) (*LogEntryResult, error) {
-	out := new(LogEntryResult)
-	err := c.cc.Invoke(ctx, "/model.LogEntryService/GetUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,23 +46,15 @@ func (c *logEntryServiceClient) GetUser(ctx context.Context, in *LogEntryQuery, 
 // All implementations should embed UnimplementedLogEntryServiceServer
 // for forward compatibility
 type LogEntryServiceServer interface {
-	GetLogEntries(context.Context, *LogEntriesQuery) (*LogEntriesResult, error)
-	Write(context.Context, *LogEntry) (*LogEntryResult, error)
-	GetUser(context.Context, *LogEntryQuery) (*LogEntryResult, error)
+	Write(context.Context, *WriteLogCommand) (*LogEntryResult, error)
 }
 
 // UnimplementedLogEntryServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedLogEntryServiceServer struct {
 }
 
-func (UnimplementedLogEntryServiceServer) GetLogEntries(context.Context, *LogEntriesQuery) (*LogEntriesResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLogEntries not implemented")
-}
-func (UnimplementedLogEntryServiceServer) Write(context.Context, *LogEntry) (*LogEntryResult, error) {
+func (UnimplementedLogEntryServiceServer) Write(context.Context, *WriteLogCommand) (*LogEntryResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Write not implemented")
-}
-func (UnimplementedLogEntryServiceServer) GetUser(context.Context, *LogEntryQuery) (*LogEntryResult, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 
 // UnsafeLogEntryServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -96,26 +68,8 @@ func RegisterLogEntryServiceServer(s grpc.ServiceRegistrar, srv LogEntryServiceS
 	s.RegisterService(&LogEntryService_ServiceDesc, srv)
 }
 
-func _LogEntryService_GetLogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LogEntriesQuery)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LogEntryServiceServer).GetLogEntries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/model.LogEntryService/GetLogEntries",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogEntryServiceServer).GetLogEntries(ctx, req.(*LogEntriesQuery))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _LogEntryService_Write_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LogEntry)
+	in := new(WriteLogCommand)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -127,25 +81,7 @@ func _LogEntryService_Write_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/model.LogEntryService/Write",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogEntryServiceServer).Write(ctx, req.(*LogEntry))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LogEntryService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LogEntryQuery)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LogEntryServiceServer).GetUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/model.LogEntryService/GetUser",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogEntryServiceServer).GetUser(ctx, req.(*LogEntryQuery))
+		return srv.(LogEntryServiceServer).Write(ctx, req.(*WriteLogCommand))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -158,16 +94,8 @@ var LogEntryService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LogEntryServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetLogEntries",
-			Handler:    _LogEntryService_GetLogEntries_Handler,
-		},
-		{
 			MethodName: "Write",
 			Handler:    _LogEntryService_Write_Handler,
-		},
-		{
-			MethodName: "GetUser",
-			Handler:    _LogEntryService_GetUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

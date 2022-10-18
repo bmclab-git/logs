@@ -1,0 +1,30 @@
+// v1.0.0
+syntax = "proto3";
+
+package model;
+
+option go_package = "github.com/Lukiya/logs/model";
+
+message LogClient {
+    string ID       = 1;
+    /* Indicate how data table is created.
+    1: By year
+    2: By month
+    3: By day
+    */
+    int32 DBPolicy  = 2;
+}
+
+message LogClientsQuery {
+    string Keyword      = 1;
+    string OrderDir     = 2;
+    int32 PageSize      = 3;
+    int32 PageIndex     = 4;
+    int32 OrderBy       = 5;
+}
+
+message LogClientsResult {
+    string Message                  = 1;
+    int64 TotalCount                = 2;
+    repeated LogClient LogClients   = 3;
+}

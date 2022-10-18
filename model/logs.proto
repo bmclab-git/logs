@@ -17,18 +17,6 @@ enum LogLevel {
     Fatal           = 6;
 }
 
-// Log Client ========================================================================================
-
-message LogClient {
-    string ID       = 1;
-    /* Indicate how data table is created.
-    1: By year
-    2: By month
-    3: By day
-    */
-    int32 DBPolicy  = 2;
-}
-
 // Log Entry ========================================================================================
 
 message LogEntry {
@@ -53,7 +41,7 @@ message LogEntryQuery {
 }
 
 message LogEntryResult {
-    string Sessage      = 1;
+    string Message      = 1;
     LogEntry LogEntry   = 2;
 }
 
@@ -66,8 +54,8 @@ message LogEntriesQuery {
     string StackTrace   = 6;
     string StartTime    = 7;
     string EndTime      = 8;
-    string OrderDir     = 9;
-    string Keyword      = 10;
+    string Keyword      = 9;
+    string OrderDir     = 10;
     LogLevel Level      = 11;
     int32 PageSize      = 12;
     int32 PageIndex     = 13;
@@ -76,31 +64,14 @@ message LogEntriesQuery {
 
 message LogEntriesResult {
     string Message                  = 1;
-    repeated LogEntry LogEntries    = 2;
+    int64 TotalCount                = 2;
+    repeated LogEntry LogEntries    = 3;
 }
 
 // Services ========================================================================================
 
-// service LogClientService{
-//     rpc GetLogEntries (LogEntriesQuery) returns (LogEntriesResult);
-    
-//     rpc Write(LogEntry) returns (LogEntryResult);
-//     rpc GetUser(LogEntryQuery) returns (LogEntryResult);
-//     // rpc UpdateUser(UserDTO) returns (UserResult);
-//     // rpc RemoveUser(UserDTO) returns (sproto.Result);
-
-//     // rpc VerifyUser(UserDTO) returns (UserResult);
-//     // rpc VerifyTOTP(OneTimePassDTO) returns (sproto.Result);
-// }
-
 service LogEntryService{
-    rpc GetLogEntries (LogEntriesQuery) returns (LogEntriesResult);
-    
-    rpc Write(LogEntry) returns (LogEntryResult);
-    rpc GetUser(LogEntryQuery) returns (LogEntryResult);
-    // rpc UpdateUser(UserDTO) returns (UserResult);
-    // rpc RemoveUser(UserDTO) returns (sproto.Result);
-
-    // rpc VerifyUser(UserDTO) returns (UserResult);
-    // rpc VerifyTOTP(OneTimePassDTO) returns (sproto.Result);
+    rpc Write(WriteLogCommand) returns (LogEntryResult);
+    // rpc GetEntry(LogEntryQuery) returns (LogEntryResult);
+    // rpc GetEntries (LogEntriesQuery) returns (LogEntriesResult);
 }
