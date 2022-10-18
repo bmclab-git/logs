@@ -1,0 +1,106 @@
+// v1.0.0
+syntax = "proto3";
+
+package model;
+
+option go_package = "github.com/Lukiya/logs/model";
+
+// Enums ========================================================================================
+
+enum LogLevel {
+    ZeroLevel       = 0;
+    Verbose         = 1;
+    Debug           = 2;
+    Infomation      = 3;
+    Warning         = 4;
+    Error           = 5;
+    Fatal           = 6;
+}
+
+// Log Client ========================================================================================
+
+message LogClient {
+    string ID       = 1;
+    /* Indicate how data table is created.
+    1: By year
+    2: By month
+    3: By day
+    */
+    int32 DBPolicy  = 2;
+}
+
+// Log Entry ========================================================================================
+
+message LogEntry {
+    string ID           = 1;
+    string User         = 2;
+    string Message      = 3;
+    string Error        = 4;
+    string StackTrace   = 5;
+    LogLevel Level      = 6;
+    int64 CreatedOnUtc  = 7;
+    bytes Payload       = 8;
+}
+
+message WriteLogCommand {
+    string ClientID     = 1;
+    LogEntry LogEntry   = 2;
+}
+
+message LogEntryQuery {
+    string DBName       = 1;
+    string ID           = 2;
+}
+
+message LogEntryResult {
+    string Sessage      = 1;
+    LogEntry LogEntry   = 2;
+}
+
+message LogEntriesQuery {
+    string ClientID     = 1;
+    string DBName       = 2;
+    string User         = 3;
+    string Message      = 4;
+    string Error        = 5;
+    string StackTrace   = 6;
+    string StartTime    = 7;
+    string EndTime      = 8;
+    string OrderDir     = 9;
+    string Keyword      = 10;
+    LogLevel Level      = 11;
+    int32 PageSize      = 12;
+    int32 PageIndex     = 13;
+    int32 OrderBy       = 14;
+}
+
+message LogEntriesResult {
+    string Message                  = 1;
+    repeated LogEntry LogEntries    = 2;
+}
+
+// Services ========================================================================================
+
+// service LogClientService{
+//     rpc GetLogEntries (LogEntriesQuery) returns (LogEntriesResult);
+    
+//     rpc Write(LogEntry) returns (LogEntryResult);
+//     rpc GetUser(LogEntryQuery) returns (LogEntryResult);
+//     // rpc UpdateUser(UserDTO) returns (UserResult);
+//     // rpc RemoveUser(UserDTO) returns (sproto.Result);
+
+//     // rpc VerifyUser(UserDTO) returns (UserResult);
+//     // rpc VerifyTOTP(OneTimePassDTO) returns (sproto.Result);
+// }
+
+service LogEntryService{
+    rpc GetLogEntries (LogEntriesQuery) returns (LogEntriesResult);
+    
+    rpc Write(LogEntry) returns (LogEntryResult);
+    rpc GetUser(LogEntryQuery) returns (LogEntryResult);
+    // rpc UpdateUser(UserDTO) returns (UserResult);
+    // rpc RemoveUser(UserDTO) returns (sproto.Result);
+
+    // rpc VerifyUser(UserDTO) returns (UserResult);
+    // rpc VerifyTOTP(OneTimePassDTO) returns (sproto.Result);
+}
