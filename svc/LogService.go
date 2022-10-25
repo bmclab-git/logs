@@ -12,33 +12,31 @@ import (
 	"github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/u"
 	"github.com/syncfuture/host"
-	"google.golang.org/grpc"
 )
 
 var (
-	_logDAL    dal.ILogDAL
-	_clientDAL dal.IClientDAL
-	logRSPool  *sync.Pool
-)
-
-func init() {
-	_logDAL = dal.NewLogDAL()
-	_clientDAL = dal.NewClientDAL()
-	logRSPool = &sync.Pool{
+	_logDAL             = dal.NewLogDAL()
+	_clientDAL          = dal.NewClientDAL()
+	_logEntryResultPool = &sync.Pool{
 		New: func() any {
 			return new(model.LogEntryResult)
 		},
 	}
-}
+	_LogEntriesResult = &sync.Pool{
+		New: func() any {
+			return new(model.LogEntriesResult)
+		},
+	}
+)
 
 type LogService struct{}
 
-func (self *LogService) Write(ctx context.Context, in *model.WriteLogCommand, opts ...grpc.CallOption) (*model.LogEntryResult, error) {
-	r := logRSPool.Get().(*model.LogEntryResult)
+func (self *LogService) Write(_ context.Context, in *model.WriteLogCommand) (*model.LogEntryResult, error) {
+	r := _logEntryResultPool.Get().(*model.LogEntryResult)
 	defer func() {
 		r.LogEntry = nil
 		r.Message = ""
-		logRSPool.Put(r)
+		_logEntryResultPool.Put(r)
 	}()
 
 	go func() {
@@ -55,18 +53,22 @@ func (self *LogService) Write(ctx context.Context, in *model.WriteLogCommand, op
 			switch client.DBPolicy {
 			case 1: // By Year
 				dbName = fmt.Sprintf("%s%s_%04d", core.LOG_DB_PREFIX, client.ID, createdOnUtc.Year())
+				// Use month as table name
 				tableName = fmt.Sprintf("%02d", createdOnUtc.Month())
 				break
 			case 2: // By Month
 				dbName = fmt.Sprintf("%s%s_%04d%02d", core.LOG_DB_PREFIX, client.ID, createdOnUtc.Year(), createdOnUtc.Month())
+				// Use day as table name
 				tableName = fmt.Sprintf("%02d", createdOnUtc.Day())
 				break
 			case 3: // By Day
 				dbName = fmt.Sprintf("%s%s_%04d%02d%02d", core.LOG_DB_PREFIX, client.ID, createdOnUtc.Year(), createdOnUtc.Month(), createdOnUtc.Day())
+				// Use hour as table name
 				tableName = fmt.Sprintf("%02d", createdOnUtc.Hour())
 				break
 			default:
 				dbName = fmt.Sprintf("%s%s", core.LOG_DB_PREFIX, client.ID)
+				// Use year as table name
 				tableName = fmt.Sprintf("%02d", createdOnUtc.Year())
 			}
 			// generate id
@@ -75,6 +77,29 @@ func (self *LogService) Write(ctx context.Context, in *model.WriteLogCommand, op
 			err = _logDAL.InsertLogEntry(dbName, tableName, in.LogEntry)
 			u.LogError(err)
 		}
+	}()
+
+	return r, nil
+}
+
+func (self *LogService) GetEntry(_ context.Context, query *model.LogEntryQuery) (*model.LogEntryResult, error) {
+	r := _logEntryResultPool.Get().(*model.LogEntryResult)
+	defer func() {
+		r.LogEntry = nil
+		r.Message = ""
+		_logEntryResultPool.Put(r)
+	}()
+
+	_logDAL.GetLogEntry(query)
+
+	return r, nil
+}
+func (self *LogService) GetEntries(_ context.Context, query *model.LogEntriesQuery) (*model.LogEntriesResult, error) {
+	r := _LogEntriesResult.Get().(*model.LogEntriesResult)
+	defer func() {
+		r.LogEntries = nil
+		r.Message = ""
+		_LogEntriesResult.Put(r)
 	}()
 
 	return r, nil

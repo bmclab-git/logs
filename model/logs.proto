@@ -37,7 +37,8 @@ message WriteLogCommand {
 
 message LogEntryQuery {
     string DBName       = 1;
-    string ID           = 2;
+    string TableName    = 2;
+    string ID           = 3;
 }
 
 message LogEntryResult {
@@ -46,17 +47,17 @@ message LogEntryResult {
 }
 
 message LogEntriesQuery {
-    string ClientID     = 1;
-    string DBName       = 2;
-    string User         = 3;
-    string Message      = 4;
-    string Error        = 5;
-    string StackTrace   = 6;
-    string StartTime    = 7;
-    string EndTime      = 8;
-    string Keyword      = 9;
-    string OrderDir     = 10;
-    LogLevel Level      = 11;
+    string DBName       = 1;
+    string TableName    = 2;
+    string TraceNo      = 3;
+    string User         = 4;
+    string Message      = 5;
+    string Error        = 6;
+    string StackTrace   = 7;
+    string OrderDir     = 8;
+    LogLevel Level      = 9;
+    int64 StartTime     = 10;
+    int64 EndTime       = 11;
     int32 PageSize      = 12;
     int32 PageIndex     = 13;
     int32 OrderBy       = 14;
@@ -72,6 +73,6 @@ message LogEntriesResult {
 
 service LogEntryService{
     rpc Write(WriteLogCommand) returns (LogEntryResult);
-    // rpc GetEntry(LogEntryQuery) returns (LogEntryResult);
-    // rpc GetEntries (LogEntriesQuery) returns (LogEntriesResult);
+    rpc GetEntry(LogEntryQuery) returns (LogEntryResult);
+    rpc GetEntries (LogEntriesQuery) returns (LogEntriesResult);
 }

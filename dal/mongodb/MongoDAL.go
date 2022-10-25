@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Lukiya/logs/core"
@@ -96,14 +97,14 @@ func (self *MongoDAL) DeleteClient(id string) error {
 
 	return nil
 }
-func (self *MongoDAL) GetClients(in *model.LogClientsQuery) (*model.LogClientsResult, error) {
+func (self *MongoDAL) GetClients(query *model.LogClientsQuery) (*model.LogClientsResult, error) {
 	// 聚集-查找
 	match := bson.M{"$match": bson.M{}}
 	matchExp := match["$match"].(bson.M)
 
-	if in.Keyword != "" {
+	if query.Keyword != "" {
 		matchExp["$or"] = []bson.M{
-			{"id": bson.M{"$regex": in.Keyword, "$options": "i"}},
+			{"id": bson.M{"$regex": query.Keyword, "$options": "i"}},
 		}
 	}
 
@@ -112,19 +113,19 @@ func (self *MongoDAL) GetClients(in *model.LogClientsQuery) (*model.LogClientsRe
 
 	// 聚集-排序
 	sortDir := -1
-	if in.OrderDir == "asc" {
+	if query.OrderDir == "asc" {
 		sortDir = 1
 	}
 	sort := bson.M{"$sort": bson.M{"id": sortDir}}
-	switch in.OrderBy {
+	switch query.OrderBy {
 	case 1:
 		sort["$sort"] = bson.M{"dbpolicy": sortDir}
 		break
 	}
 	// 聚集-限制数量
-	limit := bson.M{"$limit": in.PageSize}
+	limit := bson.M{"$limit": query.PageSize}
 	// 聚集-跳过
-	skip := bson.M{"$skip": (in.PageIndex - 1) * in.PageSize}
+	skip := bson.M{"$skip": (query.PageIndex - 1) * query.PageSize}
 
 	// 获取结果
 	chrs := _parallel.Invoke(
@@ -160,7 +161,7 @@ func (self *MongoDAL) GetClients(in *model.LogClientsQuery) (*model.LogClientsRe
 				ch <- chr
 			}()
 
-			r := make([]*model.LogClient, 0, in.PageSize)
+			r := make([]*model.LogClient, 0, query.PageSize)
 			var rs *mongo.Cursor
 			rs, chr.Error = _clientTable.Aggregate(nil, []bson.M{match, sort, skip, limit})
 			if chr.Error != nil {
@@ -228,4 +229,122 @@ func (self *MongoDAL) InsertLogEntry(dbName, tableName string, logEntry *model.L
 	}
 
 	return nil
+}
+
+func (self *MongoDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, error) {
+	table := _client.Database(query.DBName).Collection(query.TableName)
+
+	rs := table.FindOne(context.Background(), bson.M{"id": query.ID})
+	err := rs.Err()
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	var r *model.LogEntry
+	err = rs.Decode(&r)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
+}
+
+func (self *MongoDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error) {
+	table := _client.Database(query.DBName).Collection(query.TableName)
+	// Find
+	match := bson.M{"$match": bson.M{}}
+	matchExp := match["$match"].(bson.M)
+
+	// if query.Keyword != "" {
+	// 	matchExp["$or"] = []bson.M{
+	// 		{"message": bson.M{"$regex": query.Keyword, "$options": "i"}},
+	// 		{"error": bson.M{"$regex": query.Keyword, "$options": "i"}},
+	// 	}
+	// }
+
+	if query.TraceNo != "" {
+		matchExp["message"] = bson.M{"$regex": query.TraceNo, "$options": "i"}
+	}
+	if query.Message != "" {
+		matchExp["message"] = bson.M{"$regex": query.Message, "$options": "i"}
+	}
+	if query.Error != "" {
+		matchExp["message"] = bson.M{"$regex": query.Error, "$options": "i"}
+	}
+	if query.User != "" {
+		matchExp["user"] = bson.M{"$regex": query.User, "$options": "i"}
+	}
+
+	// TotalCount
+	count := bson.M{"$count": "totalcount"}
+
+	// Sort
+	sortDir := -1
+	sort := bson.M{"$sort": bson.M{"createdonutc": sortDir}}
+
+	// Paginate
+	limit := bson.M{"$limit": query.PageSize}
+	// Skip
+	skip := bson.M{"$skip": (query.PageIndex - 1) * query.PageSize}
+
+	// Parallel run
+	chrs := _parallel.Invoke(
+		func(ch chan *sdto.ChannelResultDTO) {
+			chr := &sdto.ChannelResultDTO{Result: 0}
+			defer func() {
+				ch <- chr
+			}()
+
+			countMapPtr := make(map[string]int64)
+			var rs *mongo.Cursor
+			rs, chr.Error = table.Aggregate(context.Background(), []bson.M{match, count})
+			if chr.Error != nil {
+				chr.Error = serr.WithStack(chr.Error)
+				return
+			}
+
+			if rs.TryNext(context.Background()) {
+				chr.Error = rs.Decode(&countMapPtr)
+				if chr.Error != nil {
+					chr.Error = serr.WithStack(chr.Error)
+					return
+				}
+			}
+
+			// if chr.Error != nil && chr.Error != mgo.ErrNotFound {
+			totalCount := countMapPtr["totalcount"]
+			chr.Result = totalCount
+		},
+		func(ch chan *sdto.ChannelResultDTO) {
+			chr := new(sdto.ChannelResultDTO)
+			defer func() {
+				ch <- chr
+			}()
+
+			r := make([]*model.LogEntry, 0, query.PageSize)
+			var rs *mongo.Cursor
+			rs, chr.Error = table.Aggregate(context.Background(), []bson.M{match, sort, skip, limit})
+			if chr.Error != nil {
+				chr.Error = serr.WithStack(chr.Error)
+				return
+			}
+			chr.Error = rs.All(context.Background(), &r)
+			if chr.Error != nil {
+				chr.Error = serr.WithStack(chr.Error)
+				return
+			}
+			chr.Result = r
+		},
+	)
+
+	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get results
+	totalCount := chrs[0].Result.(int64)
+	list := chrs[1].Result.([]*model.LogEntry)
+
+	return list, totalCount, nil
 }

@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LogEntryServiceClient interface {
 	Write(ctx context.Context, in *WriteLogCommand, opts ...grpc.CallOption) (*LogEntryResult, error)
+	GetEntry(ctx context.Context, in *LogEntryQuery, opts ...grpc.CallOption) (*LogEntryResult, error)
+	GetEntries(ctx context.Context, in *LogEntriesQuery, opts ...grpc.CallOption) (*LogEntriesResult, error)
 }
 
 type logEntryServiceClient struct {
@@ -42,11 +44,31 @@ func (c *logEntryServiceClient) Write(ctx context.Context, in *WriteLogCommand, 
 	return out, nil
 }
 
+func (c *logEntryServiceClient) GetEntry(ctx context.Context, in *LogEntryQuery, opts ...grpc.CallOption) (*LogEntryResult, error) {
+	out := new(LogEntryResult)
+	err := c.cc.Invoke(ctx, "/model.LogEntryService/GetEntry", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *logEntryServiceClient) GetEntries(ctx context.Context, in *LogEntriesQuery, opts ...grpc.CallOption) (*LogEntriesResult, error) {
+	out := new(LogEntriesResult)
+	err := c.cc.Invoke(ctx, "/model.LogEntryService/GetEntries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LogEntryServiceServer is the server API for LogEntryService service.
 // All implementations should embed UnimplementedLogEntryServiceServer
 // for forward compatibility
 type LogEntryServiceServer interface {
 	Write(context.Context, *WriteLogCommand) (*LogEntryResult, error)
+	GetEntry(context.Context, *LogEntryQuery) (*LogEntryResult, error)
+	GetEntries(context.Context, *LogEntriesQuery) (*LogEntriesResult, error)
 }
 
 // UnimplementedLogEntryServiceServer should be embedded to have forward compatible implementations.
@@ -55,6 +77,12 @@ type UnimplementedLogEntryServiceServer struct {
 
 func (UnimplementedLogEntryServiceServer) Write(context.Context, *WriteLogCommand) (*LogEntryResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Write not implemented")
+}
+func (UnimplementedLogEntryServiceServer) GetEntry(context.Context, *LogEntryQuery) (*LogEntryResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEntry not implemented")
+}
+func (UnimplementedLogEntryServiceServer) GetEntries(context.Context, *LogEntriesQuery) (*LogEntriesResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEntries not implemented")
 }
 
 // UnsafeLogEntryServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -86,6 +114,42 @@ func _LogEntryService_Write_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LogEntryService_GetEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogEntryQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogEntryServiceServer).GetEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/model.LogEntryService/GetEntry",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogEntryServiceServer).GetEntry(ctx, req.(*LogEntryQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LogEntryService_GetEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogEntriesQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LogEntryServiceServer).GetEntries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/model.LogEntryService/GetEntries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogEntryServiceServer).GetEntries(ctx, req.(*LogEntriesQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LogEntryService_ServiceDesc is the grpc.ServiceDesc for LogEntryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -96,6 +160,14 @@ var LogEntryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Write",
 			Handler:    _LogEntryService_Write_Handler,
+		},
+		{
+			MethodName: "GetEntry",
+			Handler:    _LogEntryService_GetEntry_Handler,
+		},
+		{
+			MethodName: "GetEntries",
+			Handler:    _LogEntryService_GetEntries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

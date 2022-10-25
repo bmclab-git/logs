@@ -7,7 +7,6 @@ import (
 
 	"github.com/Lukiya/logs/model"
 	"github.com/Lukiya/logs/svc"
-	"github.com/syncfuture/go/u"
 )
 
 func TestWriteLog(t *testing.T) {
@@ -20,7 +19,7 @@ func TestWriteLog(t *testing.T) {
 			Message:      "AAA",
 			Error:        "BBB",
 			CreatedOnUtc: time.Now().UTC().UnixMilli(),
-			Payload:      u.StrToBytes(`{"name":"test","score":3.98}`),
+			// Payload:      u.StrToBytes(`{"name":"test","score":3.98}`),
 		},
 	})
 

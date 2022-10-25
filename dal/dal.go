@@ -7,6 +7,8 @@ import (
 
 type ILogDAL interface {
 	GetDatabases(clientID string) ([]string, error)
+	GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, error)
+	GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error)
 	InsertLogEntry(dbName, tableName string, logEntry *model.LogEntry) error
 }
 
