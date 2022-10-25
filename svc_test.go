@@ -16,6 +16,7 @@ func TestWriteLog(t *testing.T) {
 		ClientID: "DL",
 		LogEntry: &model.LogEntry{
 			Level:        model.LogLevel_Debug,
+			TraceNo:      "xxxxx",
 			Message:      "AAA",
 			Error:        "BBB",
 			CreatedOnUtc: time.Now().UTC().UnixMilli(),

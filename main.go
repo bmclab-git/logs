@@ -10,7 +10,7 @@ import (
 func main() {
 	grpcHost := sgrpc.NewGRPCServiceHost(core.GrpcCP)
 	go func() {
-		slog.Fatal(grpcHost.Run())
+		go slog.Fatal(grpcHost.Run())
 	}()
 
 	webHost := sfasthttp.NewFHWebHost(core.MainCP)
