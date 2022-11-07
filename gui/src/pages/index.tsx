@@ -1,70 +1,69 @@
-import { Table } from "antd";
-import { useEffect } from "react";
-
-const dataSource = [
-  {
-    key: '1',
-    name: '胡彦斌',
-    age: 32,
-    address: '西湖区湖底公园1号',
-  },
-  {
-    key: '2',
-    name: '胡彦祖',
-    age: 42,
-    address: '西湖区湖底公园1号',
-  },
-];
+import { Spin, Table } from "antd";
+import { useRequest } from 'ahooks';
+import { useState } from "react";
 
 const columns = [
   {
-    title: '姓名',
-    dataIndex: 'name',
-    key: 'name',
+    title: 'Level',
+    dataIndex: 'Level',
   },
   {
-    title: '年龄',
-    dataIndex: 'age',
-    key: 'age',
+    title: 'Message',
+    dataIndex: 'Message',
   },
   {
-    title: '住址',
-    dataIndex: 'address',
-    key: 'address',
+    title: 'User',
+    dataIndex: 'User',
+  },
+  {
+    title: 'TraceNo',
+    dataIndex: 'TraceNo',
+  },
+  {
+    title: 'Date',
+    dataIndex: 'CreatedOnUtc',
   },
 ];
 
+interface LogEntriesResult {
+  LogEntires: LogEntry[],
+  TotalCount: number,
+}
+
+interface LogEntry {
+  ID: string,
+  TraceNo: string,
+  User: string,
+  Message: string,
+  Error: string,
+  StackTrace: string,
+  Level: number,
+  CreatedOnUtc: number,
+}
+
+async function getLogs(pageIndex: number): Promise<LogEntriesResult> {
+  const resp = await fetch("http://localhost:8080/api/logs?DBName=LOG_DL&TableName=2022&PageSize=10&PageIndex=" + pageIndex);
+  const jsonStr = await resp.text();
+  const r = JSON.parse(jsonStr);
+
+  return r;
+}
 
 export default function HomePage() {
-  useEffect(() => {
-    // // Copy
-    // document.oncopy = () => dispatch({ type: 'keyListVM/copy', });
-    // // Paste
-    // document.onpaste = e => {
-    //     const clipboardData = e.clipboardData;
-    //     if (!clipboardData) return;
+  const [pageIndex, setPageIndex] = useState<number>(1);
 
-    //     const clipboardText = clipboardData?.getData("text");
-    //     if (!clipboardText || clipboardText.indexOf(u.CLIPBOARD_REDIS) !== 0) {
-    //         return;
-    //     }
+  const rs = useRequest(async () => {
+    await getLogs(pageIndex);
+  });
+  if (rs.loading) {
+    return <Spin size="large" />;
+  }
 
-    //     Modal.confirm({
-    //         title: 'Caution!',
-    //         content: 'If key exists, it will be overrided, continue?',
-    //         onOk() {
-    //             dispatch({
-    //                 type: 'keyListVM/paste',
-    //                 clipboardText: clipboardText,
-    //             });
-    //         },
-    //     });
-    // };
-  }, []);
+  const { TotalCount, LogEntires } = rs.data!;
 
-  return (
-    <div>
-      <Table size="small" dataSource={dataSource} columns={columns} />
-    </div>
-  )
+  return <Table size="small" dataSource={LogEntires} columns={columns} pagination={{
+    total: 100,
+    current: pageIndex,
+    onChange: i => setPageIndex(i),
+  }} />;
 }

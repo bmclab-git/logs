@@ -1,8 +1,0 @@
-{
-    "Log": {
-        "Level": "debug"
-    },
-    "ConnectionStrings": {
-        "Mongo": "mongodb://sa:Famous901@192.168.188.166"
-    }
-}

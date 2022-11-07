@@ -30,6 +30,25 @@ type MongoDAL struct {
 
 // ************************************************************************************************
 
+func refreshCache() error {
+	c, err := _clientTable.Find(nil, bson.M{})
+	if err != nil {
+		return serr.WithStack(err)
+	}
+
+	var clients []*model.LogClient
+	c.All(nil, &clients)
+
+	_cacheLocker.Lock()
+	defer _cacheLocker.Unlock()
+	_clients = make(map[string]*model.LogClient, len(clients))
+	for _, x := range clients {
+		_clients[x.ID] = x
+	}
+
+	return nil
+}
+
 func (self *MongoDAL) InsertClient(client *model.LogClient) error {
 	_, err := _clientTable.InsertOne(nil, client)
 	if err != nil {
@@ -97,7 +116,7 @@ func (self *MongoDAL) DeleteClient(id string) error {
 
 	return nil
 }
-func (self *MongoDAL) GetClients(query *model.LogClientsQuery) (*model.LogClientsResult, error) {
+func (self *MongoDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, int64, error) {
 	// 聚集-查找
 	match := bson.M{"$match": bson.M{}}
 	matchExp := match["$match"].(bson.M)
@@ -179,35 +198,16 @@ func (self *MongoDAL) GetClients(query *model.LogClientsQuery) (*model.LogClient
 
 	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	// 返回结果
-	r := new(model.LogClientsResult)
-	r.TotalCount = chrs[0].Result.(int64)
-	r.LogClients = chrs[1].Result.([]*model.LogClient)
-	return r, nil
+	// Return rs
+	totalCount := chrs[0].Result.(int64)
+	list := chrs[1].Result.([]*model.LogClient)
+	return list, totalCount, nil
 }
 func (self *MongoDAL) RefreshCache() error {
 	return refreshCache()
-}
-func refreshCache() error {
-	c, err := _clientTable.Find(nil, bson.M{})
-	if err != nil {
-		return serr.WithStack(err)
-	}
-
-	var clients []*model.LogClient
-	c.All(nil, &clients)
-
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clients = make(map[string]*model.LogClient, len(clients))
-	for _, x := range clients {
-		_clients[x.ID] = x
-	}
-
-	return nil
 }
 
 // ************************************************************************************************

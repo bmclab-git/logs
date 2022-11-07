@@ -6,12 +6,14 @@ package model;
 option go_package = "github.com/Lukiya/logs/model";
 
 message LogClient {
+    // @gotags: db:"ID"
     string ID       = 1;
     /* Indicate how data table is created.
     1: By year
     2: By month
     3: By day
     */
+    // @gotags: db:"DBPolicy"
     int32 DBPolicy  = 2;
 }
 

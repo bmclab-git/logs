@@ -11,7 +11,7 @@ import (
 
 func TestWriteLog(t *testing.T) {
 	logService := new(svc.LogService)
-	logService.Write(context.Background(), &model.WriteLogCommand{
+	logService.WriteLogEntry(context.Background(), &model.WriteLogCommand{
 		ClientID: "DL",
 		LogEntry: &model.LogEntry{
 			Level:        model.LogLevel_Debug,
@@ -19,7 +19,7 @@ func TestWriteLog(t *testing.T) {
 			Message:      "AAA",
 			Error:        "BBB",
 			CreatedOnUtc: time.Now().UTC().UnixMilli(),
-			// Payload:      u.StrToBytes(`{"name":"test","score":3.98}`),
+			Payload:      `{"name":"test","score":3.98}`,
 		},
 	})
 

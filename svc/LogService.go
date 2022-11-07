@@ -3,7 +3,6 @@ package svc
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/Lukiya/logs/core"
@@ -15,29 +14,14 @@ import (
 )
 
 var (
-	_logDAL             = dal.NewLogDAL()
-	_clientDAL          = dal.NewClientDAL()
-	_logEntryResultPool = &sync.Pool{
-		New: func() any {
-			return new(model.LogEntryResult)
-		},
-	}
-	_LogEntriesResult = &sync.Pool{
-		New: func() any {
-			return new(model.LogEntriesResult)
-		},
-	}
+	_logDAL    = dal.NewLogDAL()
+	_clientDAL = dal.NewClientDAL()
 )
 
 type LogService struct{}
 
-func (self *LogService) Write(_ context.Context, in *model.WriteLogCommand) (*model.LogEntryResult, error) {
-	r := _logEntryResultPool.Get().(*model.LogEntryResult)
-	defer func() {
-		r.LogEntry = nil
-		r.Message = ""
-		_logEntryResultPool.Put(r)
-	}()
+func (self *LogService) WriteLogEntry(_ context.Context, in *model.WriteLogCommand) (*model.LogEntryResult, error) {
+	r := new(model.LogEntryResult)
 
 	go func() {
 		client, err := _clientDAL.GetClient(in.ClientID)
@@ -82,25 +66,20 @@ func (self *LogService) Write(_ context.Context, in *model.WriteLogCommand) (*mo
 	return r, nil
 }
 
-func (self *LogService) GetEntry(_ context.Context, query *model.LogEntryQuery) (*model.LogEntryResult, error) {
-	r := _logEntryResultPool.Get().(*model.LogEntryResult)
-	defer func() {
-		r.LogEntry = nil
-		r.Message = ""
-		_logEntryResultPool.Put(r)
-	}()
+func (self *LogService) GetLogEntry(_ context.Context, query *model.LogEntryQuery) (*model.LogEntryResult, error) {
+	r := new(model.LogEntryResult)
 
 	_logDAL.GetLogEntry(query)
 
 	return r, nil
 }
-func (self *LogService) GetEntries(_ context.Context, query *model.LogEntriesQuery) (*model.LogEntriesResult, error) {
-	r := _LogEntriesResult.Get().(*model.LogEntriesResult)
-	defer func() {
-		r.LogEntries = nil
-		r.Message = ""
-		_LogEntriesResult.Put(r)
-	}()
+func (self *LogService) GetLogEntries(_ context.Context, query *model.LogEntriesQuery) (*model.LogEntriesResult, error) {
+	r := new(model.LogEntriesResult)
+	var err error
+	r.LogEntries, r.TotalCount, err = _logDAL.GetLogEntries(query)
+	if u.LogError(err) {
+		r.Message = err.Error()
+	}
 
 	return r, nil
 }

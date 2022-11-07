@@ -27,12 +27,10 @@ type LogClient struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	// Indicate how data table is created.
-	//1: By year
-	//2: By month
-	//3: By day
-	DBPolicy int32 `protobuf:"varint,2,opt,name=DBPolicy,proto3" json:"DBPolicy,omitempty"`
+	// @gotags: db:"ID"
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty" db:"ID"`
+	// @gotags: db:"DBPolicy"
+	DBPolicy int32 `protobuf:"varint,2,opt,name=DBPolicy,proto3" json:"DBPolicy,omitempty" db:"DBPolicy"`
 }
 
 func (x *LogClient) Reset() {

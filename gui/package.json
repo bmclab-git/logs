@@ -9,6 +9,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "ahooks": "^3.7.2",
     "antd": "^4.23.6",
     "moment": "^2.29.4",
     "umi": "^4.0.26"

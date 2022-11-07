@@ -19,15 +19,24 @@ enum LogLevel {
 // Log Entry ========================================================================================
 
 message LogEntry {
+    // @gotags: db:"ID"
     string ID           = 1;
+    // @gotags: db:"TraceNo"
     string TraceNo      = 2;
+    // @gotags: db:"User"
     string User         = 3;
+    // @gotags: db:"Message"
     string Message      = 4;
+    // @gotags: db:"Error"
     string Error        = 5;
+    // @gotags: db:"StackTrace"
     string StackTrace   = 6;
-    LogLevel Level      = 7;
-    int64 CreatedOnUtc  = 8;
-    bytes Payload       = 9;
+    // @gotags: db:"Payload"
+    string Payload       = 7;
+    // @gotags: db:"Level"
+    LogLevel Level      = 8;
+    // @gotags: db:"CreatedOnUtc"
+    int64 CreatedOnUtc  = 9;
 }
 
 message WriteLogCommand {
@@ -72,7 +81,7 @@ message LogEntriesResult {
 // Services ========================================================================================
 
 service LogEntryService{
-    rpc Write(WriteLogCommand) returns (LogEntryResult);
-    rpc GetEntry(LogEntryQuery) returns (LogEntryResult);
-    rpc GetEntries (LogEntriesQuery) returns (LogEntriesResult);
+    rpc WriteLogEntry(WriteLogCommand) returns (LogEntryResult);
+    rpc GetLogEntry(LogEntryQuery) returns (LogEntryResult);
+    rpc GetLogEntries (LogEntriesQuery) returns (LogEntriesResult);
 }
