@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	connStr := core.MainCP.GetString("ConnectionStrings.Mongo")
+	connStr := core.GrpcCP.GetString("ConnectionStrings.Mongo")
 	ctx := context.Background()
 	// Create a new client and connect to the server
 	var err error

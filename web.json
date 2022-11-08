@@ -1,0 +1,11 @@
+{
+    "Http": {
+        "SkipCertVerification": true
+    },
+    "CORS": {
+        "AllowedOrigin": "*",
+        "AllowedMethods": "*",
+        "AllowedHeaders": "*"
+    },
+    "ListenAddr": ":7160"
+}

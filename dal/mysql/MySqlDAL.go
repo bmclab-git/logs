@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	connStr := core.MainCP.GetString("ConnectionStrings.MySql")
+	connStr := core.GrpcCP.GetString("ConnectionStrings.MySql")
 	var err error
 	_db, err = sqlx.Connect("mysql", connStr)
 	u.LogFatal(err)
@@ -224,6 +224,7 @@ func (self *MySqlDAL) InsertLogEntry(dbName, tableName string, logEntry *model.L
 	sql := fmt.Sprintf(_SQL_INSERT, dbName, tableName)
 	_, err := _db.NamedExec(sql, logEntry)
 	if err != nil {
+		// TODO: 构建表时需要加锁
 		err = ensureDBTableExsits(err, dbName, tableName) // Ensure db and table are exist
 		if err == nil {
 			// No error, retry

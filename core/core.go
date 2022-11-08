@@ -10,13 +10,13 @@ const (
 )
 
 var (
-	MainCP sconfig.IConfigProvider
+	WebCP  sconfig.IConfigProvider
 	GrpcCP sconfig.IConfigProvider
 )
 
 func init() {
-	MainCP = sconfig.NewJsonConfigProvider()
-	slog.Init(MainCP)
-
 	GrpcCP = sconfig.NewJsonConfigProvider("grpc.json")
+	slog.Init(GrpcCP)
+
+	WebCP = sconfig.NewJsonConfigProvider("web.json")
 }

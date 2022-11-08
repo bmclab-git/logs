@@ -10,6 +10,7 @@ import (
 	"github.com/Lukiya/logs/svc"
 	"github.com/syncfuture/go/slog"
 	"github.com/syncfuture/host"
+	"github.com/syncfuture/host/sconsul"
 	"github.com/syncfuture/host/sfasthttp"
 	"github.com/syncfuture/host/sgrpc"
 )
@@ -21,11 +22,15 @@ var (
 func main() {
 	grpcHost := sgrpc.NewGRPCServiceHost(core.GrpcCP)
 	go func() {
+		// Register to consul
+		sconsul.RegisterServiceInfo(core.GrpcCP)
+
+		// Register GRPC
 		model.RegisterLogEntryServiceServer(grpcHost.GetGRPCServer(), logService)
 		slog.Fatal(grpcHost.Run())
 	}()
 
-	webHost := sfasthttp.NewFHWebHost(core.MainCP)
+	webHost := sfasthttp.NewFHWebHost(core.WebCP)
 	webHost.GET("/api/logs", getLogs)
 
 	slog.Fatal(webHost.Run())
