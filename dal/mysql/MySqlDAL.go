@@ -21,6 +21,7 @@ import (
 var (
 	_clients     map[string]*model.LogClient
 	_cacheLocker = new(sync.RWMutex)
+	_dbLocker    = new(sync.RWMutex)
 	_parallel    = stask.NewParallel()
 	_db          *sqlx.DB
 )
@@ -186,6 +187,8 @@ func ensureDBTableExsits(err error, dbName, tableName string) error {
 	var sql string
 	if err != nil {
 		if innerErr, ok := err.(*mysql.MySQLError); ok && innerErr.Number == 1146 { // 1146: Table not exists
+			_dbLocker.Lock()
+			defer _dbLocker.Unlock()
 			// Select db
 			sql = fmt.Sprintf(_SQL_USE_DB, dbName)
 			_, err = _db.Exec(sql)
@@ -222,16 +225,19 @@ func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
 
 func (self *MySqlDAL) InsertLogEntry(dbName, tableName string, logEntry *model.LogEntry) error {
 	sql := fmt.Sprintf(_SQL_INSERT, dbName, tableName)
+	_dbLocker.RLock()
 	_, err := _db.NamedExec(sql, logEntry)
+	_dbLocker.RUnlock()
+
 	if err != nil {
-		// TODO: 构建表时需要加锁
 		err = ensureDBTableExsits(err, dbName, tableName) // Ensure db and table are exist
 		if err == nil {
 			// No error, retry
-			_, err = _db.NamedExec(sql, logEntry)
+			_, err := _db.NamedExec(sql, logEntry)
 			if err != nil {
 				return serr.WithStack(err)
 			}
+
 		} else {
 			return err
 		}
@@ -241,6 +247,9 @@ func (self *MySqlDAL) InsertLogEntry(dbName, tableName string, logEntry *model.L
 }
 
 func (self *MySqlDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, error) {
+	_dbLocker.RLock()
+	defer _dbLocker.RUnlock()
+
 	r := new(model.LogEntry)
 	sqlSel := fmt.Sprintf(_SQL_SELECT_ONE, query.DBName, query.TableName)
 	err := _db.Get(r, sqlSel, query.ID)
@@ -252,6 +261,9 @@ func (self *MySqlDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, 
 }
 
 func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error) {
+	_dbLocker.RLock()
+	defer _dbLocker.RUnlock()
+
 	listSel := fmt.Sprintf("SELECT * FROM `%s`.`%s`", query.DBName, query.TableName)
 	countSel := fmt.Sprintf("SELECT COUNT(0) FROM `%s`.`%s`", query.DBName, query.TableName)
 	whe := ""

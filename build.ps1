@@ -1,6 +1,6 @@
 Write-Host "#: Updating dependencies..."
 go mod tidy
-$imageName = "ecom_logs"
+$imageName = "logs"
 $targetDir = "./"
 $binPath = $targetDir + "/main"
 Write-Host "#: building binary executable file..."
