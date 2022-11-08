@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
@@ -31,6 +32,14 @@ func init() {
 	var err error
 	_db, err = sqlx.Connect("mysql", connStr)
 	u.LogFatal(err)
+
+	connMaxLifetime := core.GrpcCP.GetInt("DataAccess.ConnMaxLifetime")
+	maxOpenConns := core.GrpcCP.GetInt("DataAccess.MaxOpenConns")
+	maxIdleConns := core.GrpcCP.GetInt("DataAccess.MaxIdleConns")
+
+	_db.SetConnMaxLifetime(time.Second * time.Duration(connMaxLifetime))
+	_db.SetMaxOpenConns(maxOpenConns)
+	_db.SetMaxIdleConns(maxIdleConns)
 
 	err = refreshCache()
 	u.LogFatal(err)

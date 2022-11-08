@@ -22,6 +22,11 @@
             }
         }
     },
+    "DataAccess": {
+        "ConnMaxLifetime": 180,
+        "MaxOpenConns": 10,
+        "MaxIdleConns": 10
+    },
     "AsyncWriting": true,
     "ListenAddr": ":7159"
 }
