@@ -19,4 +19,5 @@ Write-Host "#: copying installing script..."
 Copy-Item .\$imageName.sh M:\$imageName.sh
 # Write-Host "#: run image..."
 # docker run --name $imageName -d --restart always -p 5005:5005 $imageName
+Remove-Item ./main
 Write-Host "#: done"

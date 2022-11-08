@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
@@ -39,8 +38,6 @@ func main() {
 func getLogs(ctx host.IHttpContext) {
 	query := new(model.LogEntriesQuery)
 	ctx.ReadQuery(query)
-
-	time.Sleep(time.Second * 1)
 
 	rs, err := logService.GetLogEntries(context.Background(), query)
 	if !host.HandleErr(err, ctx) {

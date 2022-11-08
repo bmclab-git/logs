@@ -28,5 +28,6 @@
         "MaxIdleConns": 10
     },
     "AsyncWriting": true,
+    "Debug": true,
     "ListenAddr": ":7159"
 }

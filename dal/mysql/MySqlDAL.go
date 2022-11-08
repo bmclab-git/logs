@@ -11,6 +11,7 @@ import (
 	"github.com/Lukiya/logs/model"
 	"github.com/syncfuture/go/sdto"
 	"github.com/syncfuture/go/serr"
+	"github.com/syncfuture/go/slog"
 	"github.com/syncfuture/go/stask"
 	"github.com/syncfuture/go/u"
 
@@ -270,17 +271,18 @@ func (self *MySqlDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, 
 }
 
 func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error) {
+
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
 
 	listSel := fmt.Sprintf("SELECT * FROM `%s`.`%s`", query.DBName, query.TableName)
 	countSel := fmt.Sprintf("SELECT COUNT(0) FROM `%s`.`%s`", query.DBName, query.TableName)
-	whe := ""
+	whe := " WHERE 0 = 0"
 
 	// TODO:
-	// if query.Keyword != "" {
-	// 	whe=" WHERE `ID` = "
-	// }
+	if query.StartTime > 0 {
+		whe += fmt.Sprintf(" ")
+	}
 
 	ord := " ORDER BY `CreatedOnUtc` DESC"
 
@@ -291,6 +293,7 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 	listSQL := listSel + whe + ord + lim
 	countSQL := countSel + whe
 
+	now := time.Now()
 	chrs := _parallel.Invoke(
 		func(ch chan *sdto.ChannelResultDTO) {
 			chr := &sdto.ChannelResultDTO{Result: 0}
@@ -313,6 +316,8 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 			chr.Result = r
 		},
 	)
+	elapsed := time.Since(now)
+	slog.Debugf("GetLogEntries: %d ms", elapsed.Milliseconds())
 
 	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
 	if err != nil {
