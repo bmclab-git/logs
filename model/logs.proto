@@ -64,9 +64,9 @@ message LogEntriesQuery {
     string Error        = 6;
     string StackTrace   = 7;
     string OrderDir     = 8;
-    LogLevel Level      = 9;
-    int64 StartTime     = 10;
-    int64 EndTime       = 11;
+    string StartTime    = 9;
+    string EndTime      = 10;
+    LogLevel Level      = 11;
     int32 PageSize      = 12;
     int32 PageIndex     = 13;
     int32 OrderBy       = 14;

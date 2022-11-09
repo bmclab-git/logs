@@ -1,5 +1,5 @@
 // import { ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Form, Input, Typography, Table, Select, DatePicker } from "antd";
+import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message } from "antd";
 import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
 
@@ -48,6 +48,12 @@ const columns: any = [
   {
     title: 'Date',
     align: "center",
+    dataIndex: 'CreatedOnUtc',
+    width: 170,
+  },
+  {
+    title: 'Date',
+    align: "center",
     width: 170,
     render: (_: any, x: LogEntry) => moment(x.CreatedOnUtc).local().format("MM/DD/YYYY hh:mm:ss A"),
   },
@@ -66,8 +72,7 @@ interface LogEntry {
 
 const getTableData = async ({ current, pageSize }: any, formData: any) => {
   var url = "http://localhost:7160/api/logs"
-  // var url = "http://localhost:7160/api/logs?DBName=LOG_DL&TableName=2022&PageSize=" + pageSize + "&PageIndex=" + current
-  console.log(formData);
+  // console.log(formData);
 
   var body = {
     PageSize: pageSize,
@@ -78,8 +83,8 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
     User: formData.User,
     TraceNo: formData.TraceNo,
     Message: formData.Message,
-    StartTime: 0,
-    EndTime: 0,
+    StartTime: "",
+    EndTime: "",
   };
 
   var dateRange: Moment[] = formData.DateRange;
@@ -87,12 +92,17 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
     var start = dateRange[0];
     var end = dateRange[1];
     if (start) {
-      body.StartTime = moment(start.local().format("YYYY-MM-DD")).valueOf()
+      var startTime = moment(start);  // Must clone
+      body.StartTime = startTime.startOf('day').utc().format();
     }
     if (end) {
-      body.EndTime = moment(end.local().format("YYYY-MM-DD")).valueOf()
+      var endTime = moment(end);      // Must clone
+      body.EndTime = endTime.startOf('day').utc().format();
     }
   }
+
+  console.log(body);
+
 
   const resp = await fetch(url, {
     method: "POST",
@@ -121,6 +131,7 @@ export default function HomePage() {
 
   return <Card>
     <Form form={form} layout="inline" size="small" initialValues={{ Level: -1, DBName: "DL", TableName: "2022" }}>
+
       <Form.Item name="DBName">
         <Select placeholder="Client">
           <Select.Option value="DL">DL</Select.Option>
@@ -155,6 +166,12 @@ export default function HomePage() {
         <RangePicker allowEmpty={[true, true]} />
       </Form.Item>
       <Form.Item>
+        <Input onChange={(x) => {
+          var a = moment(parseInt(x.currentTarget.value)).format();
+          console.log(a);
+        }} />
+      </Form.Item>
+      <Form.Item>
         <Button
           type="primary"
           htmlType="submit"
@@ -169,7 +186,6 @@ export default function HomePage() {
     <br />
     <Table rowKey="ID"
       size="small"
-      // dataSource={LogEntries}
       columns={columns}
       {...tableProps}
     />

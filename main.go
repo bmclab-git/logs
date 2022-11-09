@@ -39,9 +39,6 @@ func getLogs(ctx host.IHttpContext) {
 	query := new(model.LogEntriesQuery)
 	ctx.ReadJSON(query)
 
-	// body := ctx.GetBodyString()
-	// slog.Debug(body)
-
 	if query.PageSize <= 0 || query.PageIndex < 1 || query.DBName == "" || query.TableName == "" {
 		ctx.SetStatusCode(400)
 		return

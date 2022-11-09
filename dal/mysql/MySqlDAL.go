@@ -22,6 +22,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// const (
+// 	_TIME_FORMAT = "2006-01-02T15:04:05Z"
+// )
+
 var (
 	_clients   map[string]*model.LogClient
 	_wherePool = &sync.Pool{
@@ -297,13 +301,25 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 		_wherePool.Put(where)
 	}()
 
+	if query.StartTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.StartTime, time.UTC)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		where.WriteString(" AND `CreatedOnUtc` >= " + sconv.ToString(t.UnixMilli()))
+	}
+
+	if query.EndTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.EndTime, time.UTC)
+		t = t.Add(time.Hour * 24)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		where.WriteString(" AND `CreatedOnUtc` < " + sconv.ToString(t.UnixMilli()))
+		slog.Debug(t.UnixMilli(), ", ", t.Format(time.RFC3339))
+	}
+
 	// TODO: Prevent sql injection
-	if query.StartTime > 0 {
-		where.WriteString(" AND `CreatedOnUtc` >= " + sconv.ToString(query.StartTime))
-	}
-	if query.EndTime > 0 {
-		where.WriteString(" AND `CreatedOnUtc` <= " + sconv.ToString(query.EndTime))
-	}
 	if query.User != "" {
 		where.WriteString(" AND `User` = '" + query.User + "'")
 	}
@@ -313,8 +329,6 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 	if query.Message != "" {
 		where.WriteString(" AND `Message` LIKE '%" + query.Message + "%'")
 	}
-
-	slog.Debug(where.String())
 
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
