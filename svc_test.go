@@ -17,7 +17,7 @@ func TestWriteLog(t *testing.T) {
 			Level:        model.LogLevel_Debug,
 			User:         "Lucas",
 			TraceNo:      "xxxxx",
-			Message:      "AAA",
+			Message:      "Errors are a language-agnostic part that helps to write code in such a way that no unexpected thing happens.",
 			Error:        "BBB",
 			CreatedOnUtc: time.Now().UTC().UnixMilli(),
 			Payload:      `{"name":"test","score":3.98}`,

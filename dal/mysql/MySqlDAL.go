@@ -349,7 +349,7 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 		where.WriteString(likeSql)
 	}
 
-	// slog.Debug(where.String())
+	slog.Debug(where.String())
 
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
