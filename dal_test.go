@@ -91,3 +91,21 @@ func Test_Client(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, client)
 }
+
+func TestGetLogEntries(t *testing.T) {
+	const id = "DL"
+	db := "LOG_DL"
+	table := "2022"
+
+	dal := dal.NewLogDAL()
+
+	list, totalCount, err := dal.GetLogEntries(&model.LogEntriesQuery{
+		DBName:    db,
+		TableName: table,
+		PageSize:  10,
+		PageIndex: 1,
+	})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, list)
+	assert.Positive(t, totalCount)
+}

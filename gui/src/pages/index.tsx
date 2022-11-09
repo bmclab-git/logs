@@ -1,7 +1,7 @@
 // import { ProColumns } from '@ant-design/pro-components';
 import { Button, Card, Form, Input, Typography, Table, Select, DatePicker } from "antd";
 import { useAntdTable } from 'ahooks';
-import moment from "moment";
+import moment, { Moment } from "moment";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -65,11 +65,44 @@ interface LogEntry {
 }
 
 const getTableData = async ({ current, pageSize }: any, formData: any) => {
-  const resp = await fetch("http://localhost:7160/api/logs?DBName=LOG_DL&TableName=2022&PageSize=" + pageSize + "&PageIndex=" + current);
+  var url = "http://localhost:7160/api/logs"
+  // var url = "http://localhost:7160/api/logs?DBName=LOG_DL&TableName=2022&PageSize=" + pageSize + "&PageIndex=" + current
+  console.log(formData);
+
+  var body = {
+    PageSize: pageSize,
+    PageIndex: current,
+    DBName: formData.DBName,
+    TableName: formData.TableName,
+    Level: formData.Level,
+    User: formData.User,
+    TraceNo: formData.TraceNo,
+    Message: formData.Message,
+    StartTime: 0,
+    EndTime: 0,
+  };
+
+  var dateRange: Moment[] = formData.DateRange;
+  if (dateRange?.length == 2) {
+    var start = dateRange[0];
+    var end = dateRange[1];
+    if (start) {
+      body.StartTime = moment(start.local().format("YYYY-MM-DD")).valueOf()
+    }
+    if (end) {
+      body.EndTime = moment(end.local().format("YYYY-MM-DD")).valueOf()
+    }
+  }
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
   const jsonStr = await resp.text();
   const r = JSON.parse(jsonStr);
-
-  console.log(formData);
 
   return {
     list: r.LogEntries,
@@ -83,19 +116,30 @@ export default function HomePage() {
   const { tableProps, search } = useAntdTable(getTableData, {
     defaultPageSize: 10,
     form,
+    manual: true,
   });
 
   return <Card>
-    {/* <Form form={form} onValuesChange={autoSearch}> */}
-    <Form form={form} layout="inline" size="small">
+    <Form form={form} layout="inline" size="small" initialValues={{ Level: -1, DBName: "DL", TableName: "2022" }}>
+      <Form.Item name="DBName">
+        <Select placeholder="Client">
+          <Select.Option value="DL">DL</Select.Option>
+        </Select>
+      </Form.Item>
+      <Form.Item name="TableName">
+        <Select placeholder="Archive">
+          <Select.Option value="2022">2022</Select.Option>
+        </Select>
+      </Form.Item>
       <Form.Item name="Level">
         <Select placeholder="Level">
-          <Select.Option value="0">Verbose</Select.Option>
-          <Select.Option value="1">Debug</Select.Option>
-          <Select.Option value="2">Info</Select.Option>
-          <Select.Option value="3">Warning</Select.Option>
-          <Select.Option value="4">Error</Select.Option>
-          <Select.Option value="5">Fatal</Select.Option>
+          <Select.Option value={-1}>All</Select.Option>
+          <Select.Option value={0}>Verbose</Select.Option>
+          <Select.Option value={1}>Debug</Select.Option>
+          <Select.Option value={2}>Info</Select.Option>
+          <Select.Option value={3}>Warning</Select.Option>
+          <Select.Option value={4}>Error</Select.Option>
+          <Select.Option value={5}>Fatal</Select.Option>
         </Select>
       </Form.Item>
       <Form.Item name="Message">
@@ -128,19 +172,6 @@ export default function HomePage() {
       // dataSource={LogEntries}
       columns={columns}
       {...tableProps}
-    // pagination={{
-    //   pageSize: pagination.PageSize,
-    //   total: TotalCount,
-    //   current: pagination.PageIndex,
-    //   onChange: (pageIndex, pageSize) => {
-    //     console.log("A", pageIndex, pageSize);
-
-    //     setPagination({
-    //       PageIndex: pageIndex,
-    //       PageSize: pageSize,
-    //     });
-    //   },
-    // }} 
     />
-  </Card>;
+  </Card >;
 }

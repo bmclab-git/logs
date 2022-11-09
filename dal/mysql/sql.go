@@ -25,4 +25,57 @@ var (
 	(ID, TraceNo, ` + "`User`" + `, Message, Error, StackTrace, Payload, ` + "`Level`" + `, CreatedOnUtc)
 	VALUES(:ID, :TraceNo, :User, :Message, :Error, :StackTrace, :Payload, :Level, :CreatedOnUtc);`
 	_SQL_SELECT_ONE = "SELECT * FROM `%s`.`%s` WHERE ID = ? LIMIT 1"
+
+	_SQL_SP_PAGE = `CREATE PROCEDURE ` + "`%s`" + `.SYSSP_GetPagedData(
+		PageSize INT,
+		PageIndex INT,
+		` + "`From`" + ` LONGTEXT,
+		OrderBy LONGTEXT,
+		` + "`Fields`" + ` LONGTEXT,
+		` + "`Where`" + ` LONGTEXT
+		)
+		BEGIN
+			DECLARE ` + "`Filter`" + ` LONGTEXT DEFAULT '';
+			DECLARE TopBound INT;
+			DECLARE BottomBound INT;
+			
+			IF (LENGTH(IFNULL(` + "`Fields`" + `,'')) = 0) THEN
+				SET ` + "`Fields`" + ` = '*';
+			END IF;
+			
+			IF(LENGTH(IFNULL(` + "`Where`" + `,'')) > 0) THEN
+				SET ` + "`Filter`" + ` = CONCAT(' WHERE 0 = 0 ', ` + "`Where`" + `);
+			END IF;
+			
+			IF(PageIndex <= 0) THEN
+				SET PageIndex = 1;
+			END IF;
+			
+			SET @sqlStr = CONCAT('SELECT ', ` + "`Fields`" + `, ' FROM ', ` + "`From`" + `, ` + "`Filter`" + `, ' ORDER BY ', OrderBy);
+			
+			IF PageSize > 0 THEN
+				SET TopBound = (PageIndex - 1) * PageSize;
+				SET @sqlStr = CONCAT(@sqlStr, ' LIMIT ', TopBound, ',', PageSize, ';');
+			END IF;
+		
+			PREPARE stmt FROM @sqlStr;
+			EXECUTE stmt;
+			DEALLOCATE PREPARE stmt;
+		END`
+	_SQL_SP_COUNT = `CREATE PROCEDURE ` + "`%s`" + `.SYSSP_GetTotalCount(
+		` + "`From`" + ` LONGTEXT,
+		` + "`Where`" + ` LONGTEXT
+		)
+		BEGIN
+			DECLARE ` + "`Filter`" + ` LONGTEXT DEFAULT '';
+		
+			IF(LENGTH(IFNULL(` + "`Where`" + `,'')) > 0) THEN
+				SET ` + "`Filter`" + ` = CONCAT(' WHERE 0 = 0 ', ` + "`Where`" + `);
+			END IF;
+			SET @sqlStr = CONCAT('SELECT COUNT(0) AS TotalCount FROM ', ` + "`From`" + `, ` + "`Filter`" + `, ';');
+		
+			PREPARE stmt FROM @sqlStr;
+			EXECUTE stmt;
+			DEALLOCATE PREPARE stmt;
+		END`
 )

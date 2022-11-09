@@ -30,14 +30,24 @@ func main() {
 	}()
 
 	webHost := sfasthttp.NewFHWebHost(core.WebCP)
-	webHost.GET("/api/logs", getLogs)
+	webHost.POST("/api/logs", getLogs)
 
 	slog.Fatal(webHost.Run())
 }
 
 func getLogs(ctx host.IHttpContext) {
 	query := new(model.LogEntriesQuery)
-	ctx.ReadQuery(query)
+	ctx.ReadJSON(query)
+
+	// body := ctx.GetBodyString()
+	// slog.Debug(body)
+
+	if query.PageSize <= 0 || query.PageIndex < 1 || query.DBName == "" || query.TableName == "" {
+		ctx.SetStatusCode(400)
+		return
+	}
+
+	query.DBName = "LOG_" + query.DBName
 
 	rs, err := logService.GetLogEntries(context.Background(), query)
 	if !host.HandleErr(err, ctx) {

@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
+	"github.com/syncfuture/go/sconv"
 	"github.com/syncfuture/go/sdto"
 	"github.com/syncfuture/go/serr"
 	"github.com/syncfuture/go/slog"
@@ -21,7 +23,12 @@ import (
 )
 
 var (
-	_clients     map[string]*model.LogClient
+	_clients   map[string]*model.LogClient
+	_wherePool = &sync.Pool{
+		New: func() any {
+			return new(strings.Builder)
+		},
+	}
 	_cacheLocker = new(sync.RWMutex)
 	_dbLocker    = new(sync.RWMutex)
 	_parallel    = stask.NewParallel()
@@ -210,6 +217,18 @@ func ensureDBTableExsits(err error, dbName, tableName string) error {
 					if err != nil {
 						return serr.WithStack(err)
 					}
+					// Create count SP
+					sql = fmt.Sprintf(_SQL_SP_COUNT, dbName)
+					_, err = _db.Exec(sql)
+					if err != nil {
+						return serr.WithStack(err)
+					}
+					// Create page SP
+					sql = fmt.Sprintf(_SQL_SP_PAGE, dbName)
+					_, err = _db.Exec(sql)
+					if err != nil {
+						return serr.WithStack(err)
+					}
 				} else {
 					return serr.WithStack(err)
 				}
@@ -271,39 +290,48 @@ func (self *MySqlDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, 
 }
 
 func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error) {
+	// Build where
+	where := _wherePool.Get().(*strings.Builder)
+	defer func() {
+		where.Reset()
+		_wherePool.Put(where)
+	}()
+
+	// TODO: Prevent sql injection
+	if query.StartTime > 0 {
+		where.WriteString(" AND `CreatedOnUtc` >= " + sconv.ToString(query.StartTime))
+	}
+	if query.EndTime > 0 {
+		where.WriteString(" AND `CreatedOnUtc` <= " + sconv.ToString(query.EndTime))
+	}
+	if query.User != "" {
+		where.WriteString(" AND `User` = '" + query.User + "'")
+	}
+	if query.TraceNo != "" {
+		where.WriteString(" AND `TraceNo` = '" + query.TraceNo + "'")
+	}
+	if query.Message != "" {
+		where.WriteString(" AND `Message` LIKE '%" + query.Message + "%'")
+	}
+
+	slog.Debug(where.String())
 
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
 
-	listSel := fmt.Sprintf("SELECT * FROM `%s`.`%s`", query.DBName, query.TableName)
-	countSel := fmt.Sprintf("SELECT COUNT(0) FROM `%s`.`%s`", query.DBName, query.TableName)
-	whe := " WHERE 0 = 0"
-
-	// TODO:
-	if query.StartTime > 0 {
-		whe += fmt.Sprintf(" ")
-	}
-
-	ord := " ORDER BY `CreatedOnUtc` DESC"
-
-	start := (query.PageIndex - 1) * query.PageSize
-	end := start + query.PageSize
-	lim := fmt.Sprintf(" LIMIT %d, %d", start, end)
-
-	listSQL := listSel + whe + ord + lim
-	countSQL := countSel + whe
-
 	now := time.Now()
 	chrs := _parallel.Invoke(
 		func(ch chan *sdto.ChannelResultDTO) {
-			chr := &sdto.ChannelResultDTO{Result: 0}
+			chr := new(sdto.ChannelResultDTO)
 			defer func() {
 				ch <- chr
 			}()
-
-			var r int64
-			chr.Error = _db.Get(&r, countSQL)
-			chr.Result = r
+			var totalCount int64
+			countSql := fmt.Sprintf("CALL `%s`.`SYSSP_GetTotalCount` (?,?)", query.DBName)
+			table := fmt.Sprintf("`%s`.`%s`", query.DBName, query.TableName)
+			chr.Error = _db.Get(&totalCount, countSql, table, where.String())
+			chr.Error = serr.WithStack(chr.Error)
+			chr.Result = totalCount
 		},
 		func(ch chan *sdto.ChannelResultDTO) {
 			chr := new(sdto.ChannelResultDTO)
@@ -311,8 +339,13 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 				ch <- chr
 			}()
 
+			listSql := fmt.Sprintf("CALL `%s`.`SYSSP_GetPagedData` (?,?,?,?,?,?)", query.DBName)
+			table := fmt.Sprintf("`%s`.`%s`", query.DBName, query.TableName)
+			ord := "`CreatedOnUtc` DESC"
+
 			var r []*model.LogEntry
-			chr.Error = _db.Select(&r, listSQL)
+			chr.Error = _db.Select(&r, listSql, query.PageSize, query.PageIndex, table, ord, "*", where.String())
+			chr.Error = serr.WithStack(chr.Error)
 			chr.Result = r
 		},
 	)
@@ -326,6 +359,5 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 
 	totalCount := chrs[0].Result.(int64)
 	list := chrs[1].Result.([]*model.LogEntry)
-
 	return list, totalCount, nil
 }
