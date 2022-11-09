@@ -7,7 +7,6 @@ import (
 
 type ILogDAL interface {
 	InsertLogEntry(dbName, tableName string, logEntry *model.LogEntry) error
-	GetDatabases(clientID string) ([]string, error)
 	GetLogEntry(query *model.LogEntryQuery) (*model.LogEntry, error)
 	GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error)
 }
@@ -21,7 +20,9 @@ type IClientDAL interface {
 	GetClient(id string) (*model.LogClient, error)
 	UpdateClient(*model.LogClient) error
 	DeleteClient(id string) error
-	GetClients(in *model.LogClientsQuery) ([]*model.LogClient, int64, error)
+	GetClients(in *model.LogClientsQuery) ([]*model.LogClient, error)
+	GetDatabases(clientID string) ([]string, error)
+	GetTables(database string) ([]string, error)
 }
 
 func NewClientDAL() IClientDAL {

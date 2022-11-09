@@ -116,95 +116,19 @@ func (self *MongoDAL) DeleteClient(id string) error {
 
 	return nil
 }
-func (self *MongoDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, int64, error) {
-	// 聚集-查找
-	match := bson.M{"$match": bson.M{}}
-	matchExp := match["$match"].(bson.M)
-
-	if query.Keyword != "" {
-		matchExp["$or"] = []bson.M{
-			{"id": bson.M{"$regex": query.Keyword, "$options": "i"}},
-		}
-	}
-
-	// 聚集-总计
-	count := bson.M{"$count": "totalcount"}
-
-	// 聚集-排序
-	sortDir := -1
-	if query.OrderDir == "asc" {
-		sortDir = 1
-	}
-	sort := bson.M{"$sort": bson.M{"id": sortDir}}
-	switch query.OrderBy {
-	case 1:
-		sort["$sort"] = bson.M{"dbpolicy": sortDir}
-		break
-	}
-	// 聚集-限制数量
-	limit := bson.M{"$limit": query.PageSize}
-	// 聚集-跳过
-	skip := bson.M{"$skip": (query.PageIndex - 1) * query.PageSize}
-
-	// 获取结果
-	chrs := _parallel.Invoke(
-		func(ch chan *sdto.ChannelResultDTO) {
-			chr := &sdto.ChannelResultDTO{Result: 0}
-			defer func() {
-				ch <- chr
-			}()
-
-			countMapPtr := make(map[string]int64)
-			var rs *mongo.Cursor
-			rs, chr.Error = _clientTable.Aggregate(nil, []bson.M{match, count})
-			if chr.Error != nil {
-				chr.Error = serr.WithStack(chr.Error)
-				return
-			}
-
-			if rs.TryNext(nil) {
-				chr.Error = rs.Decode(&countMapPtr)
-				if chr.Error != nil {
-					chr.Error = serr.WithStack(chr.Error)
-					return
-				}
-			}
-
-			// if chr.Error != nil && chr.Error != mgo.ErrNotFound {
-			totalCount := countMapPtr["totalcount"]
-			chr.Result = totalCount
-		},
-		func(ch chan *sdto.ChannelResultDTO) {
-			chr := new(sdto.ChannelResultDTO)
-			defer func() {
-				ch <- chr
-			}()
-
-			r := make([]*model.LogClient, 0, query.PageSize)
-			var rs *mongo.Cursor
-			rs, chr.Error = _clientTable.Aggregate(nil, []bson.M{match, sort, skip, limit})
-			if chr.Error != nil {
-				chr.Error = serr.WithStack(chr.Error)
-				return
-			}
-			chr.Error = rs.All(nil, &r)
-			if chr.Error != nil {
-				chr.Error = serr.WithStack(chr.Error)
-				return
-			}
-			chr.Result = r
-		},
-	)
-
-	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
+func (self *MongoDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
+	c, err := _clientTable.Find(nil, bson.M{})
 	if err != nil {
-		return nil, 0, err
+		return nil, serr.WithStack(err)
 	}
 
-	// Return rs
-	totalCount := chrs[0].Result.(int64)
-	list := chrs[1].Result.([]*model.LogClient)
-	return list, totalCount, nil
+	var clients []*model.LogClient
+	err = c.All(nil, &clients)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return clients, nil
 }
 func (self *MongoDAL) RefreshCache() error {
 	return refreshCache()

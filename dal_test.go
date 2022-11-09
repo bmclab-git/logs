@@ -10,11 +10,22 @@ import (
 	"github.com/syncfuture/host"
 )
 
-func Test_GetDatabases(t *testing.T) {
-	dal := dal.NewLogDAL()
-	names, _ := dal.GetDatabases("")
-	t.Log(names)
-	assert.NotEmpty(t, names)
+func Test_GetArchives(t *testing.T) {
+	dal := dal.NewClientDAL()
+	clients, err := dal.GetClients(new(model.LogClientsQuery))
+	assert.NoError(t, err)
+	assert.NotEmpty(t, clients)
+	t.Log(clients)
+
+	dbs, err := dal.GetDatabases(clients[0].ID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, dbs)
+	t.Log(dbs)
+
+	tables, err := dal.GetTables(dbs[0])
+	assert.NoError(t, err)
+	assert.NotEmpty(t, tables)
+	t.Log(tables)
 }
 
 func Test_Log(t *testing.T) {
@@ -56,7 +67,7 @@ func Test_Log(t *testing.T) {
 }
 
 func Test_Client(t *testing.T) {
-	const id = "DL"
+	const id = "OLX"
 	dal := dal.NewClientDAL()
 	err := dal.InsertClient(&model.LogClient{
 		ID:       id,
@@ -76,13 +87,9 @@ func Test_Client(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int32(3), client.DBPolicy)
 
-	list, totalCount, err := dal.GetClients(&model.LogClientsQuery{
-		PageSize:  10,
-		PageIndex: 1,
-	})
+	list, err := dal.GetClients(&model.LogClientsQuery{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, list)
-	assert.Positive(t, totalCount)
 
 	err = dal.DeleteClient(id)
 	assert.NoError(t, err)

@@ -136,71 +136,43 @@ func (self *MySqlDAL) DeleteClient(id string) error {
 
 	return nil
 }
-func (self *MySqlDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, int64, error) {
+func (self *MySqlDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
 	listSel := "SELECT * FROM `Clients`"
-	countSel := "SELECT COUNT(0) FROM `Clients`"
-	whe := ""
 
-	// TODO:
-	// if query.Keyword != "" {
-	// 	whe=" WHERE `ID` = "
-	// }
-
-	ord := " ORDER BY "
-	switch query.OrderBy {
-	case 1:
-		ord += "`DBPolicy` "
-		break
-	default:
-		ord += "`ID` "
-		break
-	}
-	if query.OrderDir == "" {
-		query.OrderDir = "ASC"
-	}
-	ord += query.OrderDir
-
-	start := (query.PageIndex - 1) * query.PageSize
-	end := start + query.PageSize
-	lim := fmt.Sprintf(" LIMIT %d, %d", start, end)
-
-	listSQL := listSel + whe + ord + lim
-	countSQL := countSel + whe
-
-	chrs := _parallel.Invoke(
-		func(ch chan *sdto.ChannelResultDTO) {
-			chr := &sdto.ChannelResultDTO{Result: 0}
-			defer func() {
-				ch <- chr
-			}()
-
-			var r int64
-			chr.Error = _db.Get(&r, countSQL)
-			chr.Result = r
-		},
-		func(ch chan *sdto.ChannelResultDTO) {
-			chr := new(sdto.ChannelResultDTO)
-			defer func() {
-				ch <- chr
-			}()
-
-			var r []*model.LogClient
-			chr.Error = _db.Select(&r, listSQL)
-			chr.Result = r
-		},
-	)
-
-	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
+	var r []*model.LogClient
+	err := _db.Select(&r, listSel)
 	if err != nil {
-		return nil, 0, err
+		return nil, serr.WithStack(err)
 	}
 
-	totalCount := chrs[0].Result.(int64)
-	list := chrs[1].Result.([]*model.LogClient)
-	return list, totalCount, nil
+	return r, nil
 }
 func (self *MySqlDAL) RefreshCache() error {
 	return nil
+}
+func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
+	sqlStr := "SELECT schema_name FROM information_schema.schemata WHERE SCHEMA_NAME LIKE ?;"
+
+	var r []string
+	keyword := "LOG\\_" + clientID + "%"
+	err := _db.Select(&r, sqlStr, keyword)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
+}
+
+func (self *MySqlDAL) GetTables(database string) ([]string, error) {
+	sqlStr := "SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = 'base table';"
+
+	var r []string
+	err := _db.Select(&r, sqlStr, database)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
 }
 
 // ************************************************************************************************
@@ -251,10 +223,6 @@ func ensureDBTableExsits(err error, dbName, tableName string) error {
 	}
 
 	return nil
-}
-
-func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
-	return nil, nil
 }
 
 func (self *MySqlDAL) InsertLogEntry(dbName, tableName string, logEntry *model.LogEntry) error {

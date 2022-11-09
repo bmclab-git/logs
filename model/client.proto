@@ -19,14 +19,41 @@ message LogClient {
 
 message LogClientsQuery {
     string Keyword      = 1;
-    string OrderDir     = 2;
-    int32 PageSize      = 3;
-    int32 PageIndex     = 4;
-    int32 OrderBy       = 5;
 }
 
 message LogClientsResult {
-    string Message                  = 1;
-    int64 TotalCount                = 2;
-    repeated LogClient LogClients   = 3;
+    string Message              = 1;
+    repeated string LogClients  = 2;
+}
+
+message Database{
+    string Name = 1;
+}
+
+message DatabasesQuery {
+    string ClientID = 1;
+}
+
+message DatabasesResult {
+    string Message              = 1;
+    repeated string Databases   = 2;
+}
+
+message Table{
+    string Name = 1;
+}
+
+message TablesQuery {
+    string Database = 1;
+}
+
+message TablesResult {
+    string Message          = 1;
+    repeated string Tables  = 2;
+}
+
+service LogClientService{
+    rpc GetClients (LogClientsQuery) returns (LogClientsResult);
+    rpc GetDatabases (DatabasesQuery) returns (DatabasesResult);
+    rpc GetTables (TablesQuery) returns (TablesResult);
 }

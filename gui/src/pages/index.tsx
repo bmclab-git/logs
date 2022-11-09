@@ -1,7 +1,8 @@
 // import { ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message, Checkbox, Switch } from "antd";
-import { useAntdTable } from 'ahooks';
+import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message, Checkbox, Switch, Spin } from "antd";
+import { useAntdTable, useRequest } from 'ahooks';
 import moment, { Moment } from "moment";
+import { useEffect, useState } from "react";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -29,6 +30,7 @@ const columns: any = [
     },
     align: "center",
     width: 60,
+    responsive: ['sm'],
   },
   {
     title: 'Message',
@@ -38,18 +40,21 @@ const columns: any = [
     title: 'User',
     dataIndex: 'User',
     width: 100,
+    responsive: ['lg'],
   },
   {
     title: 'TraceNo',
     dataIndex: 'TraceNo',
     align: "center",
     width: 150,
+    responsive: ['xl'],
   },
   {
     title: 'Date',
     align: "center",
     width: 170,
     render: (_: any, x: LogEntry) => moment(x.CreatedOnUtc).local().format("MM/DD/YYYY hh:mm:ss A"),
+    responsive: ['md'],
   },
 ];
 
@@ -119,40 +124,141 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
   };
 };
 
-export default function HomePage() {
+const getClients = async () => {
+  var url = "http://localhost:7160/api/clients"
+  // console.log(formData);
+
+  var body = {
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const jsonStr = await resp.text();
+  const r = JSON.parse(jsonStr);
+  // console.log(r);
+
+  return r;
+};
+
+const getDatabases = async (clientID: string) => {
+  var url = "http://localhost:7160/api/dbs"
+
+  var body = {
+    ClientID: clientID
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const jsonStr = await resp.text();
+  const r = JSON.parse(jsonStr);
+  // console.log(r);
+
+  return r;
+};
+
+const getTables = async (db: string) => {
+  var url = "http://localhost:7160/api/tables"
+
+  var body = {
+    Database: db,
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const jsonStr = await resp.text();
+  const r = JSON.parse(jsonStr);
+  // console.log(r);
+
+  return r;
+};
+
+const tableDom = function (clients: string[]) {
   const [form] = Form.useForm();
+
+  const [dbs, setDBs] = useState([]);
+  const [tables, setTables] = useState([]);
 
   const { tableProps, search } = useAntdTable(getTableData, {
     defaultPageSize: 10,
     form,
     manual: true,
+    // defaultParams: [
+    //   { current: 1, pageSize: 10 },
+    //   {
+    //     Level: -1,
+    //     Client: window.localStorage.getItem('client'),
+    //     DBName: window.localStorage.getItem('db'),
+    //     TableName: window.localStorage.getItem('table'),
+    //     DateRange: [moment().subtract(1, 'M'), null],
+    //   },
+    // ],
   });
 
-  return <Card>
-    <Form form={form} layout="inline" size="small" initialValues={{
-      Level: -1,
-      Client: "DL",
-      DBName: "LOG_DL",
-      TableName: "2022",
-      DateRange: [moment().subtract(1, 'M'), null],
-    }}>
-      <Form.Item name="Client">
-        <Select placeholder="Client">
-          <Select.Option value="DL">DL</Select.Option>
-        </Select>
+  var client = window.localStorage.getItem('client');
+  var db = window.localStorage.getItem('db');
+  var table = window.localStorage.getItem('table');
+
+  return <div>
+    <Form form={form} layout="inline" size="small"
+      initialValues={{
+        Level: -1,
+        Client: client,
+        DBName: db,
+        TableName: table,
+        DateRange: [moment().subtract(1, 'M'), null],
+      }}
+    >
+      <Form.Item name="Client" rules={[{ required: true, message: 'Client is required' }]}>
+        <Select placeholder="Client"
+          dropdownMatchSelectWidth={false}
+          onChange={async (clientID) => {
+            var r = await getDatabases(clientID);
+            window.localStorage.setItem('client', clientID);
+            window.localStorage.removeItem('db');
+            window.localStorage.removeItem('table');
+            setDBs(r?.Databases ?? []);
+          }}
+          options={clients?.map(x => ({ label: x, value: x }))}
+        ></Select>
       </Form.Item>
-      <Form.Item name="DBName">
-        <Select placeholder="Database">
-          <Select.Option value="LOG_DL">LOG_DL</Select.Option>
-        </Select>
+      <Form.Item name="DBName" rules={[{ required: true, message: 'Database is required' }]}>
+        <Select placeholder="Database"
+          dropdownMatchSelectWidth={false}
+          onChange={async (db) => {
+            var r = await getTables(db);
+            window.localStorage.setItem('db', db);
+            window.localStorage.removeItem('table');
+            setTables(r?.Tables ?? []);
+          }}
+          options={dbs?.map(x => ({ label: x, value: x }))}
+        ></Select>
       </Form.Item>
-      <Form.Item name="TableName">
-        <Select placeholder="Table">
-          <Select.Option value="2022">2022</Select.Option>
-        </Select>
+      <Form.Item name="TableName" rules={[{ required: true, message: 'Table is required' }]}>
+        <Select placeholder="Table"
+          dropdownMatchSelectWidth={false}
+          onChange={async (table) => {
+            window.localStorage.setItem('table', table);
+          }}
+          options={tables?.map(x => ({ label: x, value: x }))}
+        ></Select>
       </Form.Item>
       <Form.Item name="Level">
-        <Select placeholder="Level">
+        <Select placeholder="Level" dropdownMatchSelectWidth={false}>
           <Select.Option value={-1}>All</Select.Option>
           <Select.Option value={0}>Verbose</Select.Option>
           <Select.Option value={1}>Debug</Select.Option>
@@ -171,10 +277,19 @@ export default function HomePage() {
       <Form.Item name="TraceNo">
         <Input placeholder="TraceNo" />
       </Form.Item>
-      <Form.Item name="DateRange">
+      <Form.Item name="DateRange" rules={[{
+        // validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Should accept agreement')),
+        validator: (_, array) => {
+          if (!array || !array[0]) {
+            return Promise.reject(new Error('Start date is required'));
+          }
+
+          return Promise.resolve();
+        }
+      }]}>
         <RangePicker allowEmpty={[true, true]} />
       </Form.Item>
-      <Form.Item name="FuzzySearch">
+      <Form.Item name="FuzzySearch" valuePropName="checked">
         <Switch checkedChildren="Fuzzy" unCheckedChildren="Fuzzy" />
       </Form.Item>
       <Form.Item>
@@ -193,7 +308,17 @@ export default function HomePage() {
     <Table rowKey="ID"
       size="small"
       columns={columns}
+      scroll={{
+        x: true,
+      }}
       {...tableProps}
     />
-  </Card >;
+  </div >;
+};
+
+export default function HomePage() {
+  const { data } = useRequest(getClients);
+  // console.log(data);
+
+  return tableDom(data?.LogClients);
 }

@@ -6,22 +6,11 @@ import (
 	"time"
 
 	"github.com/Lukiya/logs/core"
-	"github.com/Lukiya/logs/dal"
 	"github.com/Lukiya/logs/model"
 	"github.com/syncfuture/go/serr"
 	"github.com/syncfuture/go/u"
 	"github.com/syncfuture/host"
 )
-
-var (
-	_logDAL       = dal.NewLogDAL()
-	_clientDAL    = dal.NewClientDAL()
-	_asyncWriting bool
-)
-
-func init() {
-	_asyncWriting = core.GrpcCP.GetBool("AsyncWriting")
-}
 
 type LogService struct{}
 

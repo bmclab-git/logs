@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	logService = new(svc.LogService)
+	logService       = new(svc.LogService)
+	logClientService = new(svc.LogClientService)
 )
 
 func main() {
@@ -31,6 +32,9 @@ func main() {
 
 	webHost := sfasthttp.NewFHWebHost(core.WebCP)
 	webHost.POST("/api/logs", getLogs)
+	webHost.POST("/api/clients", getClients)
+	webHost.POST("/api/dbs", getDatabases)
+	webHost.POST("/api/tables", getTables)
 
 	slog.Fatal(webHost.Run())
 }
@@ -45,6 +49,43 @@ func getLogs(ctx host.IHttpContext) {
 	}
 
 	rs, err := logService.GetLogEntries(context.Background(), query)
+	if !host.HandleErr(err, ctx) {
+		jsonBytes, err := json.Marshal(rs)
+		if !host.HandleErr(err, ctx) {
+			ctx.WriteJsonBytes(jsonBytes)
+		}
+	}
+}
+
+func getClients(ctx host.IHttpContext) {
+	query := new(model.LogClientsQuery)
+	ctx.ReadJSON(query)
+
+	rs, err := logClientService.GetClients(context.Background(), query)
+	if !host.HandleErr(err, ctx) {
+		jsonBytes, err := json.Marshal(rs)
+		if !host.HandleErr(err, ctx) {
+			ctx.WriteJsonBytes(jsonBytes)
+		}
+	}
+}
+func getDatabases(ctx host.IHttpContext) {
+	query := new(model.DatabasesQuery)
+	ctx.ReadJSON(query)
+
+	rs, err := logClientService.GetDatabases(context.Background(), query)
+	if !host.HandleErr(err, ctx) {
+		jsonBytes, err := json.Marshal(rs)
+		if !host.HandleErr(err, ctx) {
+			ctx.WriteJsonBytes(jsonBytes)
+		}
+	}
+}
+func getTables(ctx host.IHttpContext) {
+	query := new(model.TablesQuery)
+	ctx.ReadJSON(query)
+
+	rs, err := logClientService.GetTables(context.Background(), query)
 	if !host.HandleErr(err, ctx) {
 		jsonBytes, err := json.Marshal(rs)
 		if !host.HandleErr(err, ctx) {
