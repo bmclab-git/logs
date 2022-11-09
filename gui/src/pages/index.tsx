@@ -1,5 +1,5 @@
 // import { ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message } from "antd";
+import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message, Checkbox, Switch } from "antd";
 import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
 
@@ -79,14 +79,16 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
     PageIndex: current,
     DBName: formData.DBName,
     TableName: formData.TableName,
-    Level: formData.Level,
     User: formData.User,
     TraceNo: formData.TraceNo,
     Message: formData.Message,
     StartTime: "",
     EndTime: "",
+    Level: formData.Level,
+    Flags: 0,
   };
 
+  // date range
   var dateRange: Moment[] = formData.DateRange;
   if (dateRange?.length == 2) {
     var start = dateRange[0];
@@ -100,9 +102,12 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
       body.EndTime = endTime.startOf('day').utc().format();
     }
   }
+  // flags, fuzzy search
+  if (formData.FuzzySearch) {
+    body.Flags |= 1;
+  }
 
   console.log(body);
-
 
   const resp = await fetch(url, {
     method: "POST",
@@ -130,15 +135,25 @@ export default function HomePage() {
   });
 
   return <Card>
-    <Form form={form} layout="inline" size="small" initialValues={{ Level: -1, DBName: "DL", TableName: "2022" }}>
-
-      <Form.Item name="DBName">
+    <Form form={form} layout="inline" size="small" initialValues={{
+      Level: -1,
+      Client: "DL",
+      DBName: "LOG_DL",
+      TableName: "2022",
+      DateRange: [moment().subtract(1, 'M'), null],
+    }}>
+      <Form.Item name="Client">
         <Select placeholder="Client">
           <Select.Option value="DL">DL</Select.Option>
         </Select>
       </Form.Item>
+      <Form.Item name="DBName">
+        <Select placeholder="Database">
+          <Select.Option value="LOG_DL">LOG_DL</Select.Option>
+        </Select>
+      </Form.Item>
       <Form.Item name="TableName">
-        <Select placeholder="Archive">
+        <Select placeholder="Table">
           <Select.Option value="2022">2022</Select.Option>
         </Select>
       </Form.Item>
@@ -165,11 +180,8 @@ export default function HomePage() {
       <Form.Item name="DateRange">
         <RangePicker allowEmpty={[true, true]} />
       </Form.Item>
-      <Form.Item>
-        <Input onChange={(x) => {
-          var a = moment(parseInt(x.currentTarget.value)).format();
-          console.log(a);
-        }} />
+      <Form.Item name="FuzzySearch">
+        <Switch checkedChildren="Fuzzy" unCheckedChildren="Fuzzy" />
       </Form.Item>
       <Form.Item>
         <Button

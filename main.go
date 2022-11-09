@@ -44,8 +44,6 @@ func getLogs(ctx host.IHttpContext) {
 		return
 	}
 
-	query.DBName = "LOG_" + query.DBName
-
 	rs, err := logService.GetLogEntries(context.Background(), query)
 	if !host.HandleErr(err, ctx) {
 		jsonBytes, err := json.Marshal(rs)

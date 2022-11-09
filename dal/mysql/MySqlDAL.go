@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -318,17 +319,37 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 		where.WriteString(" AND `CreatedOnUtc` < " + sconv.ToString(t.UnixMilli()))
 		slog.Debug(t.UnixMilli(), ", ", t.Format(time.RFC3339))
 	}
+	if query.Level >= 0 {
+		where.WriteString(" AND `Level` = " + strconv.FormatInt(int64(query.Level), 10))
+	}
 
 	// TODO: Prevent sql injection
 	if query.User != "" {
-		where.WriteString(" AND `User` = '" + query.User + "'")
+		likeSql := " AND `User` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.User + "%'"
+		where.WriteString(likeSql)
 	}
 	if query.TraceNo != "" {
-		where.WriteString(" AND `TraceNo` = '" + query.TraceNo + "'")
+		likeSql := " AND `TraceNo` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.TraceNo + "%'"
+		where.WriteString(likeSql)
 	}
 	if query.Message != "" {
-		where.WriteString(" AND `Message` LIKE '%" + query.Message + "%'")
+		likeSql := " AND `Message` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.Message + "%'"
+		where.WriteString(likeSql)
 	}
+
+	// slog.Debug(where.String())
 
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
