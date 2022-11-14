@@ -317,12 +317,12 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 		where.WriteString(likeSql)
 	}
 
-	slog.Debug(where.String())
+	// slog.Debug(where.String())
 
 	_dbLocker.RLock()
 	defer _dbLocker.RUnlock()
 
-	now := time.Now()
+	// now := time.Now()
 	chrs := _parallel.Invoke(
 		func(ch chan *sdto.ChannelResultDTO) {
 			chr := new(sdto.ChannelResultDTO)
@@ -352,8 +352,8 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 			chr.Result = r
 		},
 	)
-	elapsed := time.Since(now)
-	slog.Debugf("GetLogEntries: %d ms", elapsed.Milliseconds())
+	// elapsed := time.Since(now)
+	// slog.Debugf("GetLogEntries: %d ms", elapsed.Milliseconds())
 
 	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
 	if err != nil {

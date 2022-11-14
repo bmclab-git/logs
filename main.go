@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 
 	"github.com/Lukiya/logs/core"
@@ -19,6 +20,9 @@ var (
 	logClientService = new(svc.LogClientService)
 )
 
+//go:embed wwwroot
+var staticFiles embed.FS
+
 func main() {
 	grpcHost := sgrpc.NewGRPCServiceHost(core.GrpcCP)
 	go func() {
@@ -33,9 +37,12 @@ func main() {
 	webHost := sfasthttp.NewFHWebHost(core.WebCP)
 	webHost.POST("/api/logs", getLogs)
 	webHost.GET("/api/listData", getListData)
+
 	// webHost.POST("/api/clients", getClients)
 	// webHost.POST("/api/dbs", getDatabases)
 	// webHost.POST("/api/tables", getTables)
+
+	webHost.ServeEmbedFiles("/{filepath:*}", "wwwroot", staticFiles)
 
 	slog.Fatal(webHost.Run())
 }

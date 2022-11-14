@@ -4,6 +4,9 @@ import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
 import React, { useEffect, useState } from "react";
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+export const LOCAL_API_ROOT = IS_PRODUCTION ? "/api" : "http://localhost:7160/api";
+
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
@@ -70,7 +73,7 @@ interface LogEntry {
 }
 
 const getTableData = async ({ current, pageSize }: any, formData: any) => {
-  var url = "http://localhost:7160/api/logs"
+  var url = LOCAL_API_ROOT + "/logs"
   // console.log(formData);
 
   var body = {
@@ -125,7 +128,7 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
 };
 
 async function getListData(client: string, db: string) {
-  var url = `http://localhost:7160/api/listData?client=${client}&db=${db}`
+  var url = LOCAL_API_ROOT + `/listData?client=${client}&db=${db}`
 
   const resp = await fetch(url);
   const jsonStr = await resp.text();
