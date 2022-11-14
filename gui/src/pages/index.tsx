@@ -1,8 +1,8 @@
 // import { ProColumns } from '@ant-design/pro-components';
-import { Button, Card, Form, Input, Typography, Table, Select, DatePicker, message, Checkbox, Switch, Spin } from "antd";
-import { useAntdTable, useRequest } from 'ahooks';
+import { Button, Form, Input, Typography, Table, Select, DatePicker, Switch } from "antd";
+import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -124,137 +124,77 @@ const getTableData = async ({ current, pageSize }: any, formData: any) => {
   };
 };
 
-const getClients = async () => {
-  var url = "http://localhost:7160/api/clients"
-  // console.log(formData);
+async function getListData(client: string, db: string) {
+  var url = `http://localhost:7160/api/listData?client=${client}&db=${db}`
 
-  var body = {
-  };
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  const resp = await fetch(url);
   const jsonStr = await resp.text();
   const r = JSON.parse(jsonStr);
-  // console.log(r);
 
   return r;
 };
 
-const getDatabases = async (clientID: string) => {
-  var url = "http://localhost:7160/api/dbs"
-
-  var body = {
-    ClientID: clientID
-  };
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  const jsonStr = await resp.text();
-  const r = JSON.parse(jsonStr);
-  // console.log(r);
-
-  return r;
-};
-
-const getTables = async (db: string) => {
-  var url = "http://localhost:7160/api/tables"
-
-  var body = {
-    Database: db,
-  };
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  const jsonStr = await resp.text();
-  const r = JSON.parse(jsonStr);
-  // console.log(r);
-
-  return r;
-};
-
-const tableDom = function (clients: string[]) {
+const tableDom = function (listData: ListData, setListData: React.Dispatch<React.SetStateAction<ListData>>) {
   const [form] = Form.useForm();
-
-  const [dbs, setDBs] = useState([]);
-  const [tables, setTables] = useState([]);
 
   const { tableProps, search } = useAntdTable(getTableData, {
     defaultPageSize: 10,
     form,
     manual: true,
-    // defaultParams: [
-    //   { current: 1, pageSize: 10 },
-    //   {
-    //     Level: -1,
-    //     Client: window.localStorage.getItem('client'),
-    //     DBName: window.localStorage.getItem('db'),
-    //     TableName: window.localStorage.getItem('table'),
-    //     DateRange: [moment().subtract(1, 'M'), null],
-    //   },
-    // ],
   });
-
-  var client = window.localStorage.getItem('client');
-  var db = window.localStorage.getItem('db');
-  var table = window.localStorage.getItem('table');
 
   return <div>
     <Form form={form} layout="inline" size="small"
       initialValues={{
         Level: -1,
-        Client: client,
-        DBName: db,
-        TableName: table,
         DateRange: [moment().subtract(1, 'M'), null],
       }}
     >
       <Form.Item name="Client" rules={[{ required: true, message: 'Client is required' }]}>
         <Select placeholder="Client"
           dropdownMatchSelectWidth={false}
-          onChange={async (clientID) => {
-            var r = await getDatabases(clientID);
-            window.localStorage.setItem('client', clientID);
-            window.localStorage.removeItem('db');
-            window.localStorage.removeItem('table');
-            setDBs(r?.Databases ?? []);
+          onChange={async (client) => {
+            var r = await getListData(client, "");
+
+            form.resetFields(["DBName", "TableName"]);
+
+            setListData({
+              ...r,
+              Client: client,
+              Database: "",
+              Table: "",
+            });
           }}
-          options={clients?.map(x => ({ label: x, value: x }))}
+          options={listData?.Clients?.map(x => ({ label: x, value: x }))}
         ></Select>
       </Form.Item>
       <Form.Item name="DBName" rules={[{ required: true, message: 'Database is required' }]}>
         <Select placeholder="Database"
           dropdownMatchSelectWidth={false}
           onChange={async (db) => {
-            var r = await getTables(db);
-            window.localStorage.setItem('db', db);
-            window.localStorage.removeItem('table');
-            setTables(r?.Tables ?? []);
+            var r = await getListData(listData.Client, db);
+
+            form.resetFields(["TableName"]);
+
+            setListData({
+              ...r,
+              Database: db,
+            });
           }}
-          options={dbs?.map(x => ({ label: x, value: x }))}
+          options={listData?.Databases?.map(x => ({ label: x, value: x }))}
         ></Select>
       </Form.Item>
       <Form.Item name="TableName" rules={[{ required: true, message: 'Table is required' }]}>
         <Select placeholder="Table"
           dropdownMatchSelectWidth={false}
           onChange={async (table) => {
-            window.localStorage.setItem('table', table);
+            // window.localStorage.setItem('table', table);
+            setListData({
+              ...listData,
+              Table: table,
+            });
           }}
-          options={tables?.map(x => ({ label: x, value: x }))}
+          options={listData.Tables?.map(x => ({ label: x, value: x }))}
         ></Select>
       </Form.Item>
       <Form.Item name="Level">
@@ -316,9 +256,30 @@ const tableDom = function (clients: string[]) {
   </div >;
 };
 
-export default function HomePage() {
-  const { data } = useRequest(getClients);
-  // console.log(data);
+interface ListData {
+  Client: string,
+  Database: string,
+  Table: string,
+  Clients: string[],
+  Databases: string[],
+  Tables: string[],
+}
 
-  return tableDom(data?.LogClients);
+export default function HomePage() {
+  const [listData, setListData] = useState<ListData>({
+    Client: "",
+    Database: "",
+    Table: "",
+    Clients: [],
+    Databases: [],
+    Tables: [],
+  });
+
+  useEffect(() => {
+    getListData("", "").then(rs => {
+      setListData(rs);
+    })
+  }, []);
+
+  return tableDom(listData, setListData);
 }

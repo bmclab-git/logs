@@ -32,9 +32,10 @@ func main() {
 
 	webHost := sfasthttp.NewFHWebHost(core.WebCP)
 	webHost.POST("/api/logs", getLogs)
-	webHost.POST("/api/clients", getClients)
-	webHost.POST("/api/dbs", getDatabases)
-	webHost.POST("/api/tables", getTables)
+	webHost.GET("/api/listData", getListData)
+	// webHost.POST("/api/clients", getClients)
+	// webHost.POST("/api/dbs", getDatabases)
+	// webHost.POST("/api/tables", getTables)
 
 	slog.Fatal(webHost.Run())
 }
@@ -57,18 +58,74 @@ func getLogs(ctx host.IHttpContext) {
 	}
 }
 
+type GetListDataResult struct {
+	Client    string
+	Database  string
+	Table     string
+	Clients   []string
+	Databases []string
+	Tables    []string
+}
+
+func getListData(ctx host.IHttpContext) {
+	r := &GetListDataResult{
+		Clients:   make([]string, 0),
+		Databases: make([]string, 0),
+		Tables:    make([]string, 0),
+	}
+
+	r.Client = ctx.GetFormString("client")
+	r.Database = ctx.GetFormString("db")
+
+	clientRS, err := logClientService.GetClients(context.Background(), &model.LogClientsQuery{})
+	if host.HandleErr(err, ctx) {
+		return
+	}
+	r.Clients = clientRS.LogClients
+
+	if r.Client != "" {
+		// Has client id provided
+		dbRS, err := logClientService.GetDatabases(context.Background(), &model.DatabasesQuery{
+			ClientID: r.Client,
+		})
+		if host.HandleErr(err, ctx) {
+			return
+		}
+		r.Databases = dbRS.Databases
+
+		if r.Database != "" {
+			tabRS, err := logClientService.GetTables(context.Background(), &model.TablesQuery{
+				Database: r.Database,
+			})
+			if host.HandleErr(err, ctx) {
+				return
+			}
+			r.Tables = tabRS.Tables
+		}
+	}
+
+	jsonBytes, err := json.Marshal(r)
+	if !host.HandleErr(err, ctx) {
+		ctx.WriteJsonBytes(jsonBytes)
+	}
+}
+
+/*
 func getClients(ctx host.IHttpContext) {
 	query := new(model.LogClientsQuery)
 	ctx.ReadJSON(query)
 
-	rs, err := logClientService.GetClients(context.Background(), query)
+	clientRS, err := logClientService.GetClients(context.Background(), query)
+	if host.HandleErr(err, ctx) {
+		return
+	}
+
+	jsonBytes, err := json.Marshal(clientRS)
 	if !host.HandleErr(err, ctx) {
-		jsonBytes, err := json.Marshal(rs)
-		if !host.HandleErr(err, ctx) {
-			ctx.WriteJsonBytes(jsonBytes)
-		}
+		ctx.WriteJsonBytes(jsonBytes)
 	}
 }
+
 func getDatabases(ctx host.IHttpContext) {
 	query := new(model.DatabasesQuery)
 	ctx.ReadJSON(query)
@@ -93,3 +150,4 @@ func getTables(ctx host.IHttpContext) {
 		}
 	}
 }
+*/

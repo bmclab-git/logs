@@ -151,7 +151,7 @@ func (self *MySqlDAL) RefreshCache() error {
 	return nil
 }
 func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
-	sqlStr := "SELECT schema_name FROM information_schema.schemata WHERE SCHEMA_NAME LIKE ?;"
+	sqlStr := "SELECT `schema_name` FROM information_schema.schemata WHERE SCHEMA_NAME LIKE ? ORDER BY `schema_name` DESC;"
 
 	var r []string
 	keyword := "LOG\\_" + clientID + "%"
@@ -164,7 +164,7 @@ func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
 }
 
 func (self *MySqlDAL) GetTables(database string) ([]string, error) {
-	sqlStr := "SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = 'base table';"
+	sqlStr := "SELECT `table_name` FROM information_schema.tables WHERE table_schema = ? AND table_type = 'base table' ORDER BY `table_name` DESC;"
 
 	var r []string
 	err := _db.Select(&r, sqlStr, database)
