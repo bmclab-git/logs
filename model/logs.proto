@@ -35,8 +35,10 @@ message LogEntry {
     string Payload       = 7;
     // @gotags: db:"Level"
     LogLevel Level      = 8;
+    // @gotags: db:"Flags"
+    int64 Flags         = 9;
     // @gotags: db:"CreatedOnUtc"
-    int64 CreatedOnUtc  = 9;
+    int64 CreatedOnUtc  = 10;
 }
 
 message WriteLogCommand {

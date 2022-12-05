@@ -1,8 +1,9 @@
 // import { ProColumns } from '@ant-design/pro-components';
-import { Button, Form, Input, Typography, Table, Select, DatePicker, Switch } from "antd";
+import { Button, Form, Input, Typography, Table, Select, DatePicker, Switch, Modal, InputNumber } from "antd";
 import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
 import React, { useEffect, useState } from "react";
+import ReactJson from 'react-json-view'
 
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 export const LOCAL_API_ROOT = IS_PRODUCTION ? "/api" : "http://localhost:7160/api";
@@ -37,7 +38,7 @@ const columns: any = [
   },
   {
     title: 'Message',
-    dataIndex: 'Message',
+    render: (_: any, x: LogEntry) => <a onClick={() => showDetails(x)}>{x.Message}</a>,
   },
   {
     title: 'User',
@@ -60,6 +61,33 @@ const columns: any = [
     responsive: ['md'],
   },
 ];
+
+const showDetails = (x: LogEntry) => {
+  // var json = JSON.stringify(x, null, "  ");
+  // json = json.replaceAll("\\n", "\n");
+  // json = json.replaceAll("\\t", "\t");
+  // const content = <pre className="code">{json}</pre>;
+  const content = <ReactJson src={x} theme="monokai" iconStyle="circle" displayDataTypes={false} />;
+
+  Modal.info({
+    icon: null,
+    closable: true,
+    content: content,
+    width: "100%",
+  });
+
+  // const timer = setInterval(() => {
+  //   secondsToGo -= 1;
+  //   modal.update({
+  //     content: `This modal will be destroyed after ${secondsToGo} second.`,
+  //   });
+  // }, 1000);
+
+  // setTimeout(() => {
+  //   clearInterval(timer);
+  //   modal.destroy();
+  // }, secondsToGo * 1000);
+};
 
 interface LogEntry {
   ID: string,
@@ -219,6 +247,9 @@ const tableDom = function (listData: ListData, setListData: React.Dispatch<React
       </Form.Item>
       <Form.Item name="TraceNo">
         <Input placeholder="TraceNo" />
+      </Form.Item>
+      <Form.Item name="Flags">
+        <InputNumber placeholder="Flags" />
       </Form.Item>
       <Form.Item name="DateRange" rules={[{
         // validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Should accept agreement')),

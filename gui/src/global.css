@@ -1,3 +1,9 @@
 #container {
     text-align: center;
 }
+
+.code {
+    font-size: 12px;
+    background: #f5f5f5;
+    font-family: SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo;
+}
