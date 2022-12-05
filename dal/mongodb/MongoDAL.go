@@ -3,11 +3,13 @@ package mongodb
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
 	"github.com/syncfuture/go/sdto"
 	"github.com/syncfuture/go/serr"
+	"github.com/syncfuture/go/stask"
 	"github.com/syncfuture/go/u"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,12 +22,41 @@ var (
 	_cacheLocker = new(sync.RWMutex)
 )
 
-func init() {
-	err := refreshCache()
-	u.LogFatal(err)
-}
+const (
+	_CLIENT_DB    = "LogClients"
+	_CLIENT_TABLE = "clients"
+)
+
+var (
+	_client      *mongo.Client
+	_parallel    = stask.NewParallel()
+	_clientTable *mongo.Collection
+)
 
 type MongoDAL struct {
+}
+
+func Init() {
+	connStr := core.GrpcCP.GetString("ConnectionStrings.Mongo")
+	ctx := context.Background()
+	// Create a new client and connect to the server
+	var err error
+	_client, err = mongo.Connect(ctx, options.Client().ApplyURI(connStr))
+	u.LogFatal(err)
+
+	_clientTable = _client.Database(_CLIENT_DB).Collection(_CLIENT_TABLE)
+	unique := true
+
+	_, err = _clientTable.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "id", Value: 1}},
+			Options: &options.IndexOptions{Unique: &unique},
+		},
+	})
+	u.LogFatal(err)
+
+	err = refreshCache()
+	u.LogFatal(err)
 }
 
 // ************************************************************************************************
@@ -145,6 +176,15 @@ func (self *MongoDAL) GetDatabases(clientID string) ([]string, error) {
 	)
 }
 
+func (self *MongoDAL) GetTables(database string) ([]string, error) {
+	r, err := _client.Database(database).ListCollectionNames(context.Background(), bson.M{})
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
+}
+
 func (self *MongoDAL) InsertLogEntry(dbName, tableName string, logEntry *model.LogEntry) error {
 	table := _client.Database(dbName).Collection(tableName)
 	_, err := table.InsertOne(nil, logEntry)
@@ -186,17 +226,32 @@ func (self *MongoDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 	// 	}
 	// }
 
+	if query.StartTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.StartTime, time.UTC)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		matchExp["createdonutc"] = bson.M{"$gte": t.UnixMilli()}
+	}
+	if query.EndTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.EndTime, time.UTC)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		matchExp["createdonutc"] = bson.M{"$lte": t.UnixMilli()}
+	}
+	if query.Level >= 0 {
+		matchExp["level"] = bson.M{"$eq": query.Level}
+	}
+
+	if query.User != "" {
+		matchExp["user"] = bson.M{"$regex": query.User, "$options": "i"}
+	}
 	if query.TraceNo != "" {
-		matchExp["message"] = bson.M{"$regex": query.TraceNo, "$options": "i"}
+		matchExp["traceno"] = bson.M{"$regex": query.TraceNo, "$options": "i"}
 	}
 	if query.Message != "" {
 		matchExp["message"] = bson.M{"$regex": query.Message, "$options": "i"}
-	}
-	if query.Error != "" {
-		matchExp["message"] = bson.M{"$regex": query.Error, "$options": "i"}
-	}
-	if query.User != "" {
-		matchExp["user"] = bson.M{"$regex": query.User, "$options": "i"}
 	}
 
 	// TotalCount

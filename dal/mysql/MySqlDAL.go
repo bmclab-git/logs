@@ -40,7 +40,7 @@ var (
 	_db          *sqlx.DB
 )
 
-func init() {
+func Init() {
 	connStr := core.GrpcCP.GetString("ConnectionStrings.MySql")
 	var err error
 	_db, err = sqlx.Connect("mysql", connStr)
@@ -277,14 +277,13 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 		}
 		where.WriteString(" AND `CreatedOnUtc` >= " + sconv.ToString(t.UnixMilli()))
 	}
-
 	if query.EndTime != "" {
 		t, err := time.ParseInLocation(time.RFC3339, query.EndTime, time.UTC)
 		t = t.Add(time.Hour * 24)
 		if err != nil {
 			return nil, 0, serr.WithStack(err)
 		}
-		where.WriteString(" AND `CreatedOnUtc` < " + sconv.ToString(t.UnixMilli()))
+		where.WriteString(" AND `CreatedOnUtc` <= " + sconv.ToString(t.UnixMilli()))
 		slog.Debug(t.UnixMilli(), ", ", t.Format(time.RFC3339))
 	}
 	if query.Level >= 0 {

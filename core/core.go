@@ -14,7 +14,7 @@ var (
 	GrpcCP sconfig.IConfigProvider
 )
 
-func init() {
+func Init() {
 	GrpcCP = sconfig.NewJsonConfigProvider("grpc.json")
 	slog.Init(GrpcCP)
 

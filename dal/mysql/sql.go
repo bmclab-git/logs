@@ -1,9 +1,12 @@
 package mysql
 
 var (
+	//"CREATE TABLE `Clients` (`ID` varchar(100) NOT NULL,`DBPolicy` int(11) NOT NULL,PRIMARY KEY (`ID`)) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'zstd_1.3.8' REPLICA_NUM = 3 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 0;"
+	// INSERT INTO `Clients` VALUES('DL',0);
+	// INSERT INTO `Clients` VALUES('OLX',1);
 	_SQL_USE_DB       = "use `%s`;"
 	_SQL_CREATE_DB    = "CREATE DATABASE IF NOT EXISTS `%s` DEFAULT CHARACTER SET = utf8mb4 REPLICA_NUM = 1;"
-	_SQL_CREATE_TABLE = `CREATE TABLE ` + "`%s`" + `.` + "`%s`" + `(
+	_SQL_CREATE_TABLE = `CREATE TABLE IF NOT EXISTS ` + "`%s`" + `.` + "`%s`" + `(
 	  ` + "`ID`" + ` varchar(15) NOT NULL,
 	  ` + "`TraceNo`" + ` varchar(50) DEFAULT NULL,
 	  ` + "`User`" + ` varchar(100) DEFAULT NULL,

@@ -25,7 +25,8 @@
     "DataAccess": {
         "ConnMaxLifetime": 180,
         "MaxOpenConns": 10,
-        "MaxIdleConns": 10
+        "MaxIdleConns": 10,
+        "Provider": "mongodb"
     },
     "AsyncWriting": true,
     "Debug": true,

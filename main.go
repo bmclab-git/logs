@@ -16,14 +16,20 @@ import (
 )
 
 var (
-	logService       = new(svc.LogService)
-	logClientService = new(svc.LogClientService)
+	logService       *svc.LogService
+	logClientService *svc.LogClientService
 )
 
 //go:embed wwwroot
 var staticFiles embed.FS
 
 func main() {
+	core.Init()
+	svc.Init()
+
+	logService = new(svc.LogService)
+	logClientService = new(svc.LogClientService)
+
 	grpcHost := sgrpc.NewGRPCServiceHost(core.GrpcCP)
 	go func() {
 		// Register to consul
