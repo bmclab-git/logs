@@ -72,6 +72,7 @@ const showDetails = (x: LogEntry) => {
   Modal.info({
     icon: null,
     closable: true,
+    maskClosable: true,
     content: content,
     width: "100%",
   });
