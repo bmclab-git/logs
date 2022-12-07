@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
 	"github.com/Lukiya/logs/svc"
 )
 
-func TestWriteLog(t *testing.T) {
-	core.Init()
+func init() {
 	svc.Init()
+}
+
+func TestWriteLog(t *testing.T) {
 	logService := new(svc.LogService)
 	logService.WriteLogEntry(context.Background(), &model.WriteLogCommand{
 		ClientID: "DL",

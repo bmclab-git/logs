@@ -4,11 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/dal"
 	"github.com/Lukiya/logs/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/syncfuture/host"
 )
+
+func init() {
+	core.Init()
+}
 
 func Test_GetArchives(t *testing.T) {
 	dal := dal.NewClientDAL()
