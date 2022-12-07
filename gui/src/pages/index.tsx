@@ -1,5 +1,6 @@
 // import { ProColumns } from '@ant-design/pro-components';
 import { Button, Form, Input, Typography, Table, Select, DatePicker, Switch, Modal, InputNumber } from "antd";
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { useAntdTable } from 'ahooks';
 import moment, { Moment } from "moment";
 import React, { useEffect, useState } from "react";
@@ -38,7 +39,25 @@ const columns: any = [
   },
   {
     title: 'Message',
-    render: (_: any, x: LogEntry) => <a onClick={() => showDetails(x)}>{x.Message}</a>,
+    // dataIndex: 'Message',
+    render: (_: any, x: LogEntry) => {
+      switch (x.Level) {
+        case 0:
+          return <Text type="secondary">{x.Message}</Text>;
+        case 1:
+          return <Text type="secondary">{x.Message}</Text>;
+        case 2:
+          return <Text>{x.Message}</Text>;
+        case 3:
+          return <Text type="warning">{x.Message}</Text>;
+        case 4:
+          return <Text type="danger">{x.Message}</Text>;
+        case 5:
+          return <Text type="danger">{x.Message}</Text>;
+        default:
+          return <Text type="secondary">{x.Message}</Text>;
+      }
+    },
   },
   {
     title: 'User',
@@ -59,6 +78,11 @@ const columns: any = [
     width: 170,
     render: (_: any, x: LogEntry) => moment(x.CreatedOnUtc).local().format("MM/DD/YYYY hh:mm:ss A"),
     responsive: ['md'],
+  },
+  {
+    align: "center",
+    width: 32,
+    render: (_: any, x: LogEntry) => <a onClick={() => showDetails(x)}><InfoCircleOutlined /></a>,
   },
 ];
 
@@ -170,7 +194,7 @@ const tableDom = function (listData: ListData, setListData: React.Dispatch<React
   const [form] = Form.useForm();
 
   const { tableProps, search } = useAntdTable(getTableData, {
-    defaultPageSize: 10,
+    defaultPageSize: 15,
     form,
     manual: true,
   });

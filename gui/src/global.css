@@ -1,9 +1,13 @@
-#container {
+/* #container {
     text-align: center;
-}
+} */
 
-.code {
+/* .code {
     font-size: 12px;
     background: #f5f5f5;
     font-family: SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo;
+} */
+
+.react-json-view {
+    word-break: break-all;
 }

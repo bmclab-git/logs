@@ -6,12 +6,12 @@
         "SkipCertVerification": true
     },
     "ConnectionStrings": {
-        "Mongo": "mongodb://sa:Famous901@192.168.188.200",
-        "MySql": "root:Famous901@tcp(192.168.188.200:2883)/LogClients"
+        "Mongo": "mongodb://sa:Famous901@192.168.188.166",
+        "MySql": "root:Famous901@tcp(192.168.188.166:2883)/LogClients"
     },
     "Consul": {
-        "Addr": "192.168.188.200:8500",
-        "Token": "00000000-0000-0000-0000-000000000000",
+        "Addr": "192.168.188.166:8500",
+        "Token": "48359c9b-afc2-341f-9a61-ee37f3b361b6",
         "Service": {
             "Name": "logs",
             "Host": "192.168.188.166",
