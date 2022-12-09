@@ -17,10 +17,8 @@ docker rmi $imageName
 Write-Host "#: building docker image"
 docker build -t $imageName $targetDir
 Write-Host "#: exporting docker image..."
-docker save $imageName -o M:\$imageName.tar
+docker save $imageName -o ./dist/$imageName.tar
 Write-Host "#: copying installing script..."
-Copy-Item .\$imageName.sh M:\$imageName.sh
-# Write-Host "#: run image..."
-# docker run --name $imageName -d --restart always -p 5005:5005 $imageName
+Copy-Item .\$imageName.sh ./dist/$imageName.sh
 Remove-Item ./main
 Write-Host "#: done"
