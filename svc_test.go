@@ -16,7 +16,7 @@ func init() {
 func TestWriteLog(t *testing.T) {
 	logService := new(svc.LogService)
 	logService.WriteLogEntry(context.Background(), &model.WriteLogCommand{
-		ClientID: "DL",
+		ClientID: "DLSVC",
 		LogEntry: &model.LogEntry{
 			Level:   model.LogLevel_Debug,
 			Flags:   4,
