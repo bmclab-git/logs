@@ -7,7 +7,6 @@ import (
 	"github.com/Lukiya/logs/dal/redis"
 	"github.com/Lukiya/logs/model"
 	"github.com/syncfuture/go/slog"
-	"github.com/syncfuture/go/sredis"
 )
 
 type ILogDAL interface {
@@ -43,10 +42,7 @@ func NewLogDAL() ILogDAL {
 }
 
 func NewClientDAL() IClientDAL {
-	var config *sredis.RedisConfig
-	core.GrpcCP.GetStruct("Redis", &config)
-
-	return &redis.RedisDAL{
-		Client: sredis.NewClient(config),
-	}
+	r := new(redis.RedisDAL)
+	r.Init(core.GrpcCP)
+	return r
 }

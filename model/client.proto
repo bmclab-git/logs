@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package model;
 
+import "logs.proto";
+
 option go_package = "github.com/Lukiya/logs/model";
 
 message LogClient {
@@ -15,6 +17,8 @@ message LogClient {
     */
     // @gotags: db:"DBPolicy"
     int32 DBPolicy  = 2;
+    // @gotags: db:"Level"
+    LogLevel Level  = 3;
 }
 
 message LogClientsQuery {

@@ -28,8 +28,8 @@ import (
 // )
 
 var (
-	_clients   map[string]*model.LogClient
-	_wherePool = &sync.Pool{
+	_clientsMap map[string]*model.LogClient
+	_wherePool  = &sync.Pool{
 		New: func() any {
 			return new(strings.Builder)
 		},
@@ -72,9 +72,9 @@ func refreshCache() error {
 
 	_cacheLocker.Lock()
 	defer _cacheLocker.Unlock()
-	_clients = make(map[string]*model.LogClient, len(clients))
+	_clientsMap = make(map[string]*model.LogClient, len(clients))
 	for _, x := range clients {
-		_clients[x.ID] = x
+		_clientsMap[x.ID] = x
 	}
 
 	return nil
@@ -88,13 +88,13 @@ func (self *MySqlDAL) InsertClient(client *model.LogClient) error {
 
 	_cacheLocker.Lock()
 	defer _cacheLocker.Unlock()
-	_clients[client.ID] = client
+	_clientsMap[client.ID] = client
 	return nil
 }
 func (self *MySqlDAL) GetClient(id string) (r *model.LogClient, err error) {
 	var ok bool
 	_cacheLocker.RLock()
-	r, ok = _clients[id]
+	r, ok = _clientsMap[id]
 	_cacheLocker.RUnlock()
 	if ok {
 		return r, nil
@@ -107,10 +107,10 @@ func (self *MySqlDAL) GetClient(id string) (r *model.LogClient, err error) {
 	}
 
 	_cacheLocker.Lock()
-	_clients[id] = r
+	_clientsMap[id] = r
 	_cacheLocker.Unlock()
 
-	return nil, nil
+	return r, nil
 }
 func (self *MySqlDAL) UpdateClient(client *model.LogClient) error {
 	_, err := _db.Exec("UPDATE `Clients` SET `DBPolicy` = ?", client.DBPolicy)
@@ -120,7 +120,7 @@ func (self *MySqlDAL) UpdateClient(client *model.LogClient) error {
 
 	_cacheLocker.Lock()
 	defer _cacheLocker.Unlock()
-	_clients[client.ID] = client
+	_clientsMap[client.ID] = client
 
 	return nil
 }
@@ -132,7 +132,7 @@ func (self *MySqlDAL) DeleteClient(id string) error {
 
 	_cacheLocker.Lock()
 	defer _cacheLocker.Unlock()
-	delete(_clients, id)
+	delete(_clientsMap, id)
 
 	return nil
 }

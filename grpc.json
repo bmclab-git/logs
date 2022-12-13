@@ -9,18 +9,18 @@
         "Addrs": [
             "192.168.188.200:6379"
         ],
-        "Password": "xxxxxxxx"
+        "Password": "Famous901"
     },
     "ConnectionStrings": {
-        "Mongo": "mongodb://sa:xxxxxxxx@192.168.188.200",
-        "MySql": "root:xxxxxxxxx@tcp(192.168.188.200:2883)/LogClients"
+        "Mongo": "mongodb://sa:Famous901@192.168.188.200",
+        "MySql": "root:Famous901@tcp(192.168.188.200:2883)/LogClients"
     },
     "Consul": {
         "Addr": "192.168.188.200:8500",
         "Token": "00000000-0000-0000-0000-000000000000",
         "Service": {
             "Name": "logs",
-            "Host": "192.168.188.200",
+            "Host": "192.168.188.166",
             "Port": 7159,
             "Check": {
                 "Interval": "10s",

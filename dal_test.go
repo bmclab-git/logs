@@ -78,6 +78,7 @@ func Test_Client(t *testing.T) {
 	err := dal.InsertClient(&model.LogClient{
 		ID:       id,
 		DBPolicy: 1,
+		Level:    model.LogLevel_Infomation,
 	})
 	assert.NoError(t, err)
 

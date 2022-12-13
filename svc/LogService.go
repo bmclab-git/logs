@@ -39,6 +39,11 @@ func write(in *model.WriteLogCommand) error {
 	} else if client == nil {
 		return serr.Errorf("Client '%s' not found", in.ClientID)
 	} else {
+		if in.LogEntry.Level < client.Level {
+			// skip
+			return nil
+		}
+
 		// determine database and table
 		createdOnUtc := time.UnixMilli(in.LogEntry.CreatedOnUtc)
 
