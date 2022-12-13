@@ -25,7 +25,7 @@ func (self *LogClientService) GetClients(ctx context.Context, in *model.LogClien
 func (self *LogClientService) GetDatabases(ctx context.Context, in *model.DatabasesQuery) (*model.DatabasesResult, error) {
 	r := new(model.DatabasesResult)
 
-	list, err := _clientDAL.GetDatabases(in.ClientID)
+	list, err := _logDAL.GetDatabases(in.ClientID)
 	if u.LogError(err) {
 		r.Message = err.Error()
 	}
@@ -35,7 +35,7 @@ func (self *LogClientService) GetDatabases(ctx context.Context, in *model.Databa
 }
 func (self *LogClientService) GetTables(ctx context.Context, in *model.TablesQuery) (*model.TablesResult, error) {
 	r := new(model.TablesResult)
-	list, err := _clientDAL.GetTables(in.Database)
+	list, err := _logDAL.GetTables(in.Database)
 	if u.LogError(err) {
 		r.Message = err.Error()
 	}

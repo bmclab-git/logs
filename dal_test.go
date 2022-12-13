@@ -16,18 +16,19 @@ func init() {
 }
 
 func Test_GetArchives(t *testing.T) {
-	dal := dal.NewClientDAL()
-	clients, err := dal.GetClients(new(model.LogClientsQuery))
+	clientDAL := dal.NewClientDAL()
+	logDAL := dal.NewLogDAL()
+	clients, err := clientDAL.GetClients(new(model.LogClientsQuery))
 	assert.NoError(t, err)
 	assert.NotEmpty(t, clients)
 	t.Log(clients)
 
-	dbs, err := dal.GetDatabases(clients[0].ID)
+	dbs, err := logDAL.GetDatabases(clients[0].ID)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, dbs)
 	t.Log(dbs)
 
-	tables, err := dal.GetTables(dbs[0])
+	tables, err := logDAL.GetTables(dbs[0])
 	assert.NoError(t, err)
 	assert.NotEmpty(t, tables)
 	t.Log(tables)

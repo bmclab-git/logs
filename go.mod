@@ -3,12 +3,13 @@ module github.com/Lukiya/logs
 go 1.19
 
 require (
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/stretchr/testify v1.8.1
 	github.com/syncfuture/go v1.9.6
-	github.com/syncfuture/host v1.9.1
-	go.mongodb.org/mongo-driver v1.11.0
+	github.com/syncfuture/host v1.9.2
+	go.mongodb.org/mongo-driver v1.11.1
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -24,7 +25,6 @@ require (
 	github.com/fasthttp/session/v2 v2.4.15 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/go-playground/form v3.1.4+incompatible // indirect
-	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
