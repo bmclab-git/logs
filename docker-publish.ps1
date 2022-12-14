@@ -1,4 +1,4 @@
-# !!!!! Make sure ./build-docker.ps1 already executed without problem first
+# !!!!! Make sure ./build.ps1 already executed without problem first
 
 $imageName = "logs"
 $targetDir = "./dist"
