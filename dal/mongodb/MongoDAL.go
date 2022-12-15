@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/Lukiya/logs/core"
@@ -17,9 +16,9 @@ import (
 )
 
 var (
-	_nameOnly    = true
-	_clients     map[string]*model.LogClient
-	_cacheLocker = new(sync.RWMutex)
+	_nameOnly = true
+	// _clients     map[string]*model.LogClient
+	// _cacheLocker = new(sync.RWMutex)
 )
 
 const (
@@ -55,115 +54,115 @@ func Init() {
 	})
 	u.LogFatal(err)
 
-	err = refreshCache()
-	u.LogFatal(err)
+	// err = refreshCache()
+	// u.LogFatal(err)
 }
 
 // ************************************************************************************************
 
-func refreshCache() error {
-	c, err := _clientTable.Find(nil, bson.M{})
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// func refreshCache() error {
+// 	c, err := _clientTable.Find(nil, bson.M{})
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	var clients []*model.LogClient
-	c.All(nil, &clients)
+// 	var clients []*model.LogClient
+// 	c.All(nil, &clients)
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clients = make(map[string]*model.LogClient, len(clients))
-	for _, x := range clients {
-		_clients[x.ID] = x
-	}
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clients = make(map[string]*model.LogClient, len(clients))
+// 	for _, x := range clients {
+// 		_clients[x.ID] = x
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (self *MongoDAL) InsertClient(client *model.LogClient) error {
-	_, err := _clientTable.InsertOne(nil, client)
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// func (self *MongoDAL) InsertClient(client *model.LogClient) error {
+// 	_, err := _clientTable.InsertOne(nil, client)
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clients[client.ID] = client
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clients[client.ID] = client
 
-	return nil
-}
-func (self *MongoDAL) GetClient(id string) (r *model.LogClient, err error) {
-	var ok bool
-	_cacheLocker.RLock()
-	r, ok = _clients[id]
-	_cacheLocker.RUnlock()
-	if ok {
-		return r, nil
-	}
+// 	return nil
+// }
+// func (self *MongoDAL) GetClient(id string) (r *model.LogClient, err error) {
+// 	var ok bool
+// 	_cacheLocker.RLock()
+// 	r, ok = _clients[id]
+// 	_cacheLocker.RUnlock()
+// 	if ok {
+// 		return r, nil
+// 	}
 
-	rs := _clientTable.FindOne(nil, bson.M{"id": id})
-	err = rs.Err()
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, serr.WithStack(err)
-	}
+// 	rs := _clientTable.FindOne(nil, bson.M{"id": id})
+// 	err = rs.Err()
+// 	if err != nil {
+// 		if err == mongo.ErrNoDocuments {
+// 			return nil, nil
+// 		}
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	err = rs.Decode(&r)
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
+// 	err = rs.Decode(&r)
+// 	if err != nil {
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	_clients[id] = r
-	_cacheLocker.Unlock()
+// 	_cacheLocker.Lock()
+// 	_clients[id] = r
+// 	_cacheLocker.Unlock()
 
-	return r, nil
-}
-func (self *MongoDAL) UpdateClient(client *model.LogClient) error {
-	_, err := _clientTable.UpdateOne(nil, bson.M{"id": client.ID}, bson.M{"$set": bson.M{
-		"dbpolicy": client.DBPolicy,
-	}})
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// 	return r, nil
+// }
+// func (self *MongoDAL) UpdateClient(client *model.LogClient) error {
+// 	_, err := _clientTable.UpdateOne(nil, bson.M{"id": client.ID}, bson.M{"$set": bson.M{
+// 		"dbpolicy": client.DBPolicy,
+// 	}})
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clients[client.ID] = client
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clients[client.ID] = client
 
-	return nil
-}
-func (self *MongoDAL) DeleteClient(id string) error {
-	_, err := _clientTable.DeleteOne(nil, bson.M{"id": id})
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// 	return nil
+// }
+// func (self *MongoDAL) DeleteClient(id string) error {
+// 	_, err := _clientTable.DeleteOne(nil, bson.M{"id": id})
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	delete(_clients, id)
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	delete(_clients, id)
 
-	return nil
-}
-func (self *MongoDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
-	c, err := _clientTable.Find(nil, bson.M{})
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
+// 	return nil
+// }
+// func (self *MongoDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
+// 	c, err := _clientTable.Find(nil, bson.M{})
+// 	if err != nil {
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	var clients []*model.LogClient
-	err = c.All(nil, &clients)
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
+// 	var clients []*model.LogClient
+// 	err = c.All(nil, &clients)
+// 	if err != nil {
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	return clients, nil
-}
-func (self *MongoDAL) RefreshCache() error {
-	return refreshCache()
-}
+// 	return clients, nil
+// }
+// func (self *MongoDAL) RefreshCache() error {
+// 	return refreshCache()
+// }
 
 // ************************************************************************************************
 

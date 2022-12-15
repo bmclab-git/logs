@@ -28,16 +28,16 @@ import (
 // )
 
 var (
-	_clientsMap map[string]*model.LogClient
-	_wherePool  = &sync.Pool{
+	// _clientsMap map[string]*model.LogClient
+	_wherePool = &sync.Pool{
 		New: func() any {
 			return new(strings.Builder)
 		},
 	}
-	_cacheLocker = new(sync.RWMutex)
-	_dbLocker    = new(sync.RWMutex)
-	_parallel    = stask.NewParallel()
-	_db          *sqlx.DB
+	// _cacheLocker = new(sync.RWMutex)
+	_dbLocker = new(sync.RWMutex)
+	_parallel = stask.NewParallel()
+	_db       *sqlx.DB
 )
 
 func Init() {
@@ -54,8 +54,8 @@ func Init() {
 	_db.SetMaxOpenConns(maxOpenConns)
 	_db.SetMaxIdleConns(maxIdleConns)
 
-	err = refreshCache()
-	u.LogFatal(err)
+	// err = refreshCache()
+	// u.LogFatal(err)
 }
 
 type MySqlDAL struct {
@@ -63,117 +63,93 @@ type MySqlDAL struct {
 
 // ************************************************************************************************
 
-func refreshCache() error {
-	var clients []*model.LogClient
-	err := _db.Select(&clients, "SELECT * FROM `Clients`")
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// func refreshCache() error {
+// 	var clients []*model.LogClient
+// 	err := _db.Select(&clients, "SELECT * FROM `Clients`")
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clientsMap = make(map[string]*model.LogClient, len(clients))
-	for _, x := range clients {
-		_clientsMap[x.ID] = x
-	}
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clientsMap = make(map[string]*model.LogClient, len(clients))
+// 	for _, x := range clients {
+// 		_clientsMap[x.ID] = x
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (self *MySqlDAL) InsertClient(client *model.LogClient) error {
-	_, err := _db.NamedExec("INSERT INTO `Clients`(`ID`,`DBPolicy`) VALUES(:ID, :DBPolicy)", client)
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// func (self *MySqlDAL) InsertClient(client *model.LogClient) error {
+// 	_, err := _db.NamedExec("INSERT INTO `Clients`(`ID`,`DBPolicy`) VALUES(:ID, :DBPolicy)", client)
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clientsMap[client.ID] = client
-	return nil
-}
-func (self *MySqlDAL) GetClient(id string) (r *model.LogClient, err error) {
-	var ok bool
-	_cacheLocker.RLock()
-	r, ok = _clientsMap[id]
-	_cacheLocker.RUnlock()
-	if ok {
-		return r, nil
-	}
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clientsMap[client.ID] = client
+// 	return nil
+// }
+// func (self *MySqlDAL) GetClient(id string) (r *model.LogClient, err error) {
+// 	var ok bool
+// 	_cacheLocker.RLock()
+// 	r, ok = _clientsMap[id]
+// 	_cacheLocker.RUnlock()
+// 	if ok {
+// 		return r, nil
+// 	}
 
-	r = new(model.LogClient)
-	err = _db.Get(r, "SELECT * FROM `Clients` WHERE ID = ?", id)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, serr.WithStack(err)
-	}
+// 	r = new(model.LogClient)
+// 	err = _db.Get(r, "SELECT * FROM `Clients` WHERE ID = ?", id)
+// 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	_clientsMap[id] = r
-	_cacheLocker.Unlock()
+// 	_cacheLocker.Lock()
+// 	_clientsMap[id] = r
+// 	_cacheLocker.Unlock()
 
-	return r, nil
-}
-func (self *MySqlDAL) UpdateClient(client *model.LogClient) error {
-	_, err := _db.Exec("UPDATE `Clients` SET `DBPolicy` = ?", client.DBPolicy)
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// 	return r, nil
+// }
+// func (self *MySqlDAL) UpdateClient(client *model.LogClient) error {
+// 	_, err := _db.Exec("UPDATE `Clients` SET `DBPolicy` = ?", client.DBPolicy)
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	_clientsMap[client.ID] = client
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	_clientsMap[client.ID] = client
 
-	return nil
-}
-func (self *MySqlDAL) DeleteClient(id string) error {
-	_, err := _db.Exec("DELETE FROM `Clients` WHERE `ID` = ?", id)
-	if err != nil {
-		return serr.WithStack(err)
-	}
+// 	return nil
+// }
+// func (self *MySqlDAL) DeleteClient(id string) error {
+// 	_, err := _db.Exec("DELETE FROM `Clients` WHERE `ID` = ?", id)
+// 	if err != nil {
+// 		return serr.WithStack(err)
+// 	}
 
-	_cacheLocker.Lock()
-	defer _cacheLocker.Unlock()
-	delete(_clientsMap, id)
+// 	_cacheLocker.Lock()
+// 	defer _cacheLocker.Unlock()
+// 	delete(_clientsMap, id)
 
-	return nil
-}
-func (self *MySqlDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
-	listSel := "SELECT * FROM `Clients`"
+// 	return nil
+// }
+// func (self *MySqlDAL) GetClients(query *model.LogClientsQuery) ([]*model.LogClient, error) {
+// 	listSel := "SELECT * FROM `Clients`"
 
-	var r []*model.LogClient
-	err := _db.Select(&r, listSel)
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
+// 	var r []*model.LogClient
+// 	err := _db.Select(&r, listSel)
+// 	if err != nil {
+// 		return nil, serr.WithStack(err)
+// 	}
 
-	return r, nil
-}
-func (self *MySqlDAL) RefreshCache() error {
-	return nil
-}
-func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
-	sqlStr := "SELECT `schema_name` FROM information_schema.schemata WHERE SCHEMA_NAME LIKE ? ORDER BY `schema_name` DESC;"
-
-	var r []string
-	keyword := "LOG\\_" + clientID + "%"
-	err := _db.Select(&r, sqlStr, keyword)
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
-
-	return r, nil
-}
-
-func (self *MySqlDAL) GetTables(database string) ([]string, error) {
-	sqlStr := "SELECT `table_name` FROM information_schema.tables WHERE table_schema = ? AND table_type = 'base table' ORDER BY `table_name` DESC;"
-
-	var r []string
-	err := _db.Select(&r, sqlStr, database)
-	if err != nil {
-		return nil, serr.WithStack(err)
-	}
-
-	return r, nil
-}
+// 	return r, nil
+// }
+// func (self *MySqlDAL) RefreshCache() error {
+// 	return nil
+// }
 
 // ************************************************************************************************
 
@@ -362,4 +338,29 @@ func (self *MySqlDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogE
 	totalCount := chrs[0].Result.(int64)
 	list := chrs[1].Result.([]*model.LogEntry)
 	return list, totalCount, nil
+}
+
+func (self *MySqlDAL) GetDatabases(clientID string) ([]string, error) {
+	sqlStr := "SELECT `schema_name` FROM information_schema.schemata WHERE SCHEMA_NAME LIKE ? ORDER BY `schema_name` DESC;"
+
+	var r []string
+	keyword := "LOG\\_" + clientID + "%"
+	err := _db.Select(&r, sqlStr, keyword)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
+}
+
+func (self *MySqlDAL) GetTables(database string) ([]string, error) {
+	sqlStr := "SELECT `table_name` FROM information_schema.tables WHERE table_schema = ? AND table_type = 'base table' ORDER BY `table_name` DESC;"
+
+	var r []string
+	err := _db.Select(&r, sqlStr, database)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
 }

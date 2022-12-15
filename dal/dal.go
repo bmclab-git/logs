@@ -2,6 +2,7 @@ package dal
 
 import (
 	"github.com/Lukiya/logs/core"
+	"github.com/Lukiya/logs/dal/ch"
 	"github.com/Lukiya/logs/dal/mongodb"
 	"github.com/Lukiya/logs/dal/mysql"
 	"github.com/Lukiya/logs/dal/redis"
@@ -26,8 +27,12 @@ type IClientDAL interface {
 }
 
 func NewLogDAL() ILogDAL {
-	provider := core.GrpcCP.GetStringDefault("DataAccess.Provider", "mongodb")
-	if provider == "mongodb" {
+	provider := core.GrpcCP.GetStringDefault("DataAccess.Provider", "clickhouse")
+	if provider == "clickhouse" {
+		ch.Init()
+		r := new(ch.ClickHouseDAL)
+		return r
+	} else if provider == "mongodb" {
 		mongodb.Init()
 		r := new(mongodb.MongoDAL)
 		return r

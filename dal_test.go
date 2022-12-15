@@ -37,7 +37,7 @@ func Test_GetArchives(t *testing.T) {
 func Test_Log(t *testing.T) {
 	dal := dal.NewLogDAL()
 	id := host.GenerateID()
-	db := "LOG_DL"
+	db := "LOG_SMS"
 	table := "2022"
 
 	err := dal.InsertLogEntry(db, table, &model.LogEntry{
@@ -108,7 +108,7 @@ func Test_Client(t *testing.T) {
 
 func TestGetLogEntries(t *testing.T) {
 	const id = "DL"
-	db := "LOG_DL"
+	db := "LOG_SMS"
 	table := "2022"
 
 	dal := dal.NewLogDAL()
