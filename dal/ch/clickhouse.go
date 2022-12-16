@@ -2,6 +2,7 @@ package ch
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/Lukiya/logs/core"
 	"github.com/Lukiya/logs/model"
 	"github.com/jmoiron/sqlx"
+	"github.com/syncfuture/go/sconv"
+	"github.com/syncfuture/go/sdto"
 	"github.com/syncfuture/go/serr"
 	"github.com/syncfuture/go/stask"
 	"github.com/syncfuture/go/u"
@@ -140,11 +143,122 @@ func (self *ClickHouseDAL) GetLogEntry(query *model.LogEntryQuery) (*model.LogEn
 	return r, nil
 }
 func (self *ClickHouseDAL) GetLogEntries(query *model.LogEntriesQuery) ([]*model.LogEntry, int64, error) {
-	return nil, 0, nil
+	where := _wherePool.Get().(*strings.Builder)
+	defer func() {
+		where.Reset()
+		_wherePool.Put(where)
+	}()
+
+	if query.StartTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.StartTime, time.UTC)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		where.WriteString(" AND `CreatedOnUtc` >= " + sconv.ToString(t.UnixMilli()))
+	}
+	if query.EndTime != "" {
+		t, err := time.ParseInLocation(time.RFC3339, query.EndTime, time.UTC)
+		t = t.Add(time.Hour * 24)
+		if err != nil {
+			return nil, 0, serr.WithStack(err)
+		}
+		where.WriteString(" AND `CreatedOnUtc` <= " + sconv.ToString(t.UnixMilli()))
+		// slog.Debug(t.UnixMilli(), ", ", t.Format(time.RFC3339))
+	}
+	if query.Level >= 0 {
+		where.WriteString(" AND `Level` = " + strconv.FormatInt(int64(query.Level), 10))
+	}
+
+	// TODO: Prevent sql injection
+	if query.User != "" {
+		likeSql := " AND `User` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.User + "%'"
+		where.WriteString(likeSql)
+	}
+	if query.TraceNo != "" {
+		likeSql := " AND `TraceNo` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.TraceNo + "%'"
+		where.WriteString(likeSql)
+	}
+	if query.Message != "" {
+		likeSql := " AND `Message` LIKE '"
+		if query.Flags&1 == 1 { // Has flag, do left & right fuzzy search, other wise, only do right fuzzy search
+			likeSql += "%"
+		}
+		likeSql += query.Message + "%'"
+		where.WriteString(likeSql)
+	}
+
+	// where.WriteString(fmt.Sprintf("%s ORDER BY `CreatedOnUtc` DESC LIMIT %d, %d", selectSql, start, end))
+
+	_dbLocker.RLock()
+	defer _dbLocker.RUnlock()
+
+	// now := time.Now()
+	chrs := _parallel.Invoke(
+		func(ch chan *sdto.ChannelResultDTO) {
+			chr := new(sdto.ChannelResultDTO)
+			defer func() {
+				ch <- chr
+			}()
+			var totalCount int64
+			// selectSql := fmt.Sprintf("SELECT * FROM `%s`.`%s` WHERE 0 = 0", query.DBName, query.TableName)
+			countSql := fmt.Sprintf("SELECT COUNT(0) FROM `%s`.`%s` WHERE 0 = 0 %s", query.DBName, query.TableName, where.String())
+			chr.Error = _db.Get(&totalCount, countSql)
+			chr.Error = serr.WithStack(chr.Error)
+			chr.Result = totalCount
+		},
+		func(ch chan *sdto.ChannelResultDTO) {
+			chr := new(sdto.ChannelResultDTO)
+			defer func() {
+				ch <- chr
+			}()
+
+			start := (query.PageIndex - 1) * query.PageSize
+			end := start + query.PageSize
+
+			listSql := fmt.Sprintf("SELECT * FROM `%s`.`%s` WHERE 0 = 0 %s ORDER BY `CreatedOnUtc` DESC LIMIT %d, %d", query.DBName, query.TableName, where.String(), start, end)
+
+			var r []*model.LogEntry
+			chr.Error = _db.Select(&r, listSql)
+			chr.Error = serr.WithStack(chr.Error)
+			chr.Result = r
+		},
+	)
+	// elapsed := time.Since(now)
+	// slog.Debugf("GetLogEntries: %d ms", elapsed.Milliseconds())
+
+	err := u.JointErrors(chrs[0].Error, chrs[1].Error)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	totalCount := chrs[0].Result.(int64)
+	list := chrs[1].Result.([]*model.LogEntry)
+	return list, totalCount, nil
 }
 func (self *ClickHouseDAL) GetDatabases(clientID string) ([]string, error) {
-	return nil, nil
+	var r []string
+	keyword := "LOG\\_" + clientID + "%"
+	err := _db.Select(&r, _SQL_SELECT_DATABASES, keyword)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
 }
 func (self *ClickHouseDAL) GetTables(database string) ([]string, error) {
-	return nil, nil
+	var r []string
+	err := _db.Select(&r, _SQL_SELECT_TABLES, database)
+	if err != nil {
+		return nil, serr.WithStack(err)
+	}
+
+	return r, nil
 }

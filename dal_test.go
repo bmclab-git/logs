@@ -16,14 +16,10 @@ func init() {
 }
 
 func Test_GetArchives(t *testing.T) {
-	clientDAL := dal.NewClientDAL()
+	const clientID = "SMS"
 	logDAL := dal.NewLogDAL()
-	clients, err := clientDAL.GetClients(new(model.LogClientsQuery))
-	assert.NoError(t, err)
-	assert.NotEmpty(t, clients)
-	t.Log(clients)
 
-	dbs, err := logDAL.GetDatabases(clients[0].ID)
+	dbs, err := logDAL.GetDatabases(clientID)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, dbs)
 	t.Log(dbs)
@@ -107,7 +103,6 @@ func Test_Client(t *testing.T) {
 }
 
 func TestGetLogEntries(t *testing.T) {
-	const id = "DL"
 	db := "LOG_SMS"
 	table := "2022"
 
@@ -118,6 +113,7 @@ func TestGetLogEntries(t *testing.T) {
 		TableName: table,
 		PageSize:  10,
 		PageIndex: 1,
+		Level:     -1,
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, list)
