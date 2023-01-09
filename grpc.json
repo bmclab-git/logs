@@ -13,7 +13,8 @@
     },
     "ConnectionStrings": {
         "Mongo": "mongodb://sa:xxxxxxxxxx@192.168.188.200",
-        "MySql": "root:xxxxxxxxxx@tcp(192.168.188.200:2883)/LogClients"
+        "MySql": "root:xxxxxxxxxx@tcp(192.168.188.200:2883)/LogClients",
+        "ClickHouse": "tcp://default:xxxxxxxxxx@192.168.188.200:9001"
     },
     "Consul": {
         "Addr": "192.168.188.200:8500",
@@ -32,7 +33,7 @@
         "ConnMaxLifetime": 180,
         "MaxOpenConns": 10,
         "MaxIdleConns": 10,
-        "Provider": "mongodb"
+        "Provider": "clickhouse"
     },
     "AsyncWriting": true,
     "Debug": true,
